@@ -1,0 +1,13 @@
+{
+  "name": "sistema-credito",
+  "version": "1.0.0",
+  "description": "Sistema de solicitud de crédito",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "uuid": "^9.0.0"
+  }
+}

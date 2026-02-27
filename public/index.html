@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solicitud de Crédito | FinCredit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">
+    <span class="icon">🏦</span>
+    FinCredit
+  </div>
+  <nav>
+    <a href="/" class="active">Solicitar Crédito</a>
+    <a href="/admin">Panel Admin</a>
+  </nav>
+</header>
+
+<!-- Spinner de carga -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner"></div>
+  <span id="spinnerMsg">Procesando...</span>
+</div>
+
+<div class="container">
+
+  <!-- Barra de pasos -->
+  <div class="steps-bar">
+    <div class="step active" id="step-ind-1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Datos<br>Personales</div>
+    </div>
+    <div class="step" id="step-ind-2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Información<br>Financiera</div>
+    </div>
+    <div class="step" id="step-ind-3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Evaluación<br>de Crédito</div>
+    </div>
+    <div class="step" id="step-ind-4">
+      <div class="step-circle">4</div>
+      <div class="step-label">Resultado<br>Final</div>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 1: Datos Personales ═══ -->
+  <div class="card active" id="step-1">
+    <div class="card-header">
+      <h2>📋 Datos Personales</h2>
+      <p>Ingresa tus datos para comenzar tu solicitud de crédito.</p>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="nombre">Nombre completo *</label>
+          <input type="text" id="nombre" placeholder="Ej. Juan Pérez López" autocomplete="name" />
+          <span class="field-error" id="err-nombre">Campo requerido</span>
+        </div>
+
+        <div class="form-group">
+          <label for="telefono">Teléfono *</label>
+          <input type="tel" id="telefono" placeholder="Ej. 5512345678" maxlength="10" autocomplete="tel" />
+          <span class="field-error" id="err-telefono">Ingresa 10 dígitos</span>
+        </div>
+
+        <div class="form-group full">
+          <label for="direccion">Dirección *</label>
+          <input type="text" id="direccion" placeholder="Calle, Número, Colonia, Ciudad, CP" autocomplete="street-address" />
+          <span class="field-error" id="err-direccion">Campo requerido</span>
+        </div>
+
+        <div class="form-group">
+          <label for="rfc">RFC *</label>
+          <input type="text" id="rfc" placeholder="Ej. PELJ800101ABC" maxlength="13" style="text-transform:uppercase" />
+          <span class="field-hint">Persona física: 13 chars · Moral: 12 chars</span>
+          <span class="field-error" id="err-rfc">RFC con formato inválido</span>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de producto *</label>
+          <div class="product-grid">
+            <div class="product-card" id="prod-prestamo" onclick="selectProduct('prestamo_personal')">
+              <span class="product-icon">💳</span>
+              <h3>Préstamo Personal</h3>
+              <p>Recibe efectivo directo a tu cuenta</p>
+            </div>
+            <div class="product-card" id="prod-tarjeta" onclick="selectProduct('tarjeta_credito')">
+              <span class="product-icon">💎</span>
+              <h3>Tarjeta de Crédito</h3>
+              <p>Línea de crédito revolvente</p>
+            </div>
+          </div>
+          <span class="field-error" id="err-producto">Selecciona un producto</span>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="irPaso2()">
+          Continuar →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 2: Información Financiera ═══ -->
+  <div class="card" id="step-2">
+    <div class="card-header">
+      <h2>💰 Información Financiera</h2>
+      <p>Esta información nos permite calcular el crédito que podemos ofrecerte.</p>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="ocupacion">Ocupación / Empleo *</label>
+          <select id="ocupacion">
+            <option value="">-- Selecciona --</option>
+            <option value="empleado">Empleado</option>
+            <option value="independiente">Trabajador Independiente</option>
+            <option value="empresario">Empresario / Dueño de negocio</option>
+            <option value="pensionado">Pensionado / Jubilado</option>
+            <option value="otro">Otro</option>
+          </select>
+          <span class="field-error" id="err-ocupacion">Selecciona una opción</span>
+        </div>
+
+        <div class="form-group">
+          <label for="ingreso_mensual">Ingreso mensual neto (MXN) *</label>
+          <input type="number" id="ingreso_mensual" placeholder="Ej. 25000" min="1000" step="500" />
+          <span class="field-error" id="err-ingreso">Ingresa un monto válido (mínimo $1,000)</span>
+        </div>
+
+        <div class="form-group full">
+          <div class="alert alert-info">
+            💡 <span>El ingreso anual se calculará automáticamente multiplicando tu ingreso mensual × 12. Puedes ajustarlo si tus ingresos son variables.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ingreso_anual">Ingreso anual neto (MXN)</label>
+          <input type="number" id="ingreso_anual" placeholder="Se calcula automáticamente" min="0" step="1000" />
+          <span class="field-hint">Puedes modificarlo si tus ingresos son variables</span>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="irPaso1()">← Regresar</button>
+        <button class="btn btn-primary" onclick="irPaso3()">Evaluar Crédito →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PASO 3: Evaluación ═══ -->
+  <div class="card" id="step-3">
+    <div class="card-header">
+      <h2>🔍 Evaluación de Crédito</h2>
+      <p>Resultado de tu análisis crediticio.</p>
+    </div>
+    <div class="card-body" id="eval-body">
+      <!-- Se llena dinámicamente -->
+    </div>
+  </div>
+
+  <!-- ═══ PASO 4: Resultado Final ═══ -->
+  <div class="card" id="step-4">
+    <div class="card-header">
+      <h2>🎉 ¡Crédito Autorizado!</h2>
+    </div>
+    <div class="card-body" id="result-body">
+      <!-- Se llena dinámicamente -->
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script src="app.js"></script>
+</body>
+</html>

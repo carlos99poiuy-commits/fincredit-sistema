@@ -1,0 +1,5 @@
+node_modules/
+creditos.json
+*.log
+.env
+nul

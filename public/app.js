@@ -173,14 +173,14 @@ function recopilarDatos() {
 // Renderizar evaluación
 // ────────────────────────────────────────────────
 function renderEvaluacion(ev, tipo) {
-  const scoreColor = ev.score >= 750 ? '#057a55' : ev.score >= 680 ? '#1a56db' : ev.score >= 600 ? '#d97706' : '#c81e1e';
+  const scoreColor = ev.score >= 750 ? '#0ee8a0' : ev.score >= 680 ? '#4d9eff' : ev.score >= 600 ? '#e8b84b' : '#ff3d5a';
   const esTarjeta = tipo === 'tarjeta_credito';
 
   const html = `
-    <div class="score-display" style="background: linear-gradient(135deg, ${scoreColor}dd, ${scoreColor})">
-      <div class="score-number">${ev.score}</div>
+    <div class="score-display">
+      <div class="score-number" style="color:${scoreColor}">${ev.score}</div>
       <div class="score-label">Score de Crédito</div>
-      <span class="score-badge">${ev.clasificacion}</span>
+      <span class="score-badge" style="color:${scoreColor};background:${scoreColor}18;border-color:${scoreColor}44">${ev.clasificacion}</span>
     </div>
 
     <div class="eval-grid">

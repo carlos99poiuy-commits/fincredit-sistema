@@ -19,6 +19,24 @@ curl -X POST http://localhost:3000/api/evaluar \
 
 No test runner or linter is configured.
 
+## Project Structure
+
+```
+ejercicioClaude1/
+├── server.js           # Express server, all API routes and credit scoring logic
+├── database.js         # JSON file persistence layer (read/write creditos.json)
+├── creditos.json       # Data store — solicitudes + creditos arrays
+├── package.json
+├── package-lock.json
+├── .gitignore
+├── CLAUDE.md
+└── public/             # Static files served directly by Express
+    ├── index.html      # Solicitud wizard (4-step form)
+    ├── app.js          # Wizard logic, state management, dynamic rendering
+    ├── style.css       # Styles for index.html / app.js only
+    └── admin.html      # Admin panel (self-contained, CSS+JS inline)
+```
+
 ## Architecture
 
 **Stack:** Express backend + vanilla JS frontend + JSON file persistence. No build step required — the server serves static files from `public/` directly.

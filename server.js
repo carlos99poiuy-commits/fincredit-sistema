@@ -209,6 +209,14 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/react', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'react-app', 'index.html'));
+});
+
+app.get('/react-admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'react-app', 'admin.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`\n✅ Sistema de Crédito en http://localhost:${PORT}`);
   console.log(`📊 Panel Admin en    http://localhost:${PORT}/admin\n`);

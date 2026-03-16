@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinCredit React — Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    /* ── Reset & Variables ─────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #070b12;
+      --surface:      #0c1220;
+      --surface-up:   #111926;
+      --border:       #192033;
+      --border-lit:   #253350;
+      --amber:        #e8b84b;
+      --amber-dim:    rgba(232,184,75,0.10);
+      --amber-glow:   rgba(232,184,75,0.25);
+      --green:        #0ee8a0;
+      --green-dim:    rgba(14,232,160,0.10);
+      --red:          #ff3d5a;
+      --red-dim:      rgba(255,61,90,0.10);
+      --blue:         #4d9eff;
+      --blue-dim:     rgba(77,158,255,0.10);
+      --text:         #b8c8e0;
+      --text-muted:   #3d5070;
+      --text-bright:  #e0ecff;
+      --font-display: 'Syne', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg:           #f0f4f8;
+      --surface:      #ffffff;
+      --surface-up:   #e8edf4;
+      --border:       rgba(0,0,0,0.10);
+      --border-lit:   rgba(0,0,0,0.15);
+      --amber:        #d4a017;
+      --amber-dim:    rgba(212,160,23,0.10);
+      --amber-glow:   rgba(212,160,23,0.20);
+      --green:        #059669;
+      --green-dim:    rgba(5,150,105,0.10);
+      --red:          #dc2626;
+      --red-dim:      rgba(220,38,38,0.10);
+      --blue:         #2563eb;
+      --blue-dim:     rgba(37,99,235,0.10);
+      --text:         #334155;
+      --text-muted:   #64748b;
+      --text-bright:  #0f172a;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* ── Noise texture overlay ─────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    [data-theme="light"] body::before { opacity: 0.15; }
+
+    /* ── Grid background ───────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    [data-theme="light"] body::after { opacity: 0.25; }
+
+    * { position: relative; z-index: 1; }
+
+    /* ── Top Bar ───────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,11,18,0.95);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    [data-theme="light"] .topbar {
+      background: rgba(255,255,255,0.92);
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 24px; }
+
+    .logo-mark {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark .bracket { color: var(--amber); font-family: var(--font-mono); font-weight: 700; }
+
+    .nav-pill {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 0.75rem;
+    }
+
+    .nav-pill a {
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 6px 14px;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-pill a:hover { color: var(--text); background: var(--surface-up); }
+
+    .nav-pill a.active {
+      color: var(--amber);
+      background: var(--amber-dim);
+      border-right: 1px solid var(--border);
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 0.72rem; color: var(--text-muted); }
+
+    .live-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+    }
+
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    #clock { color: var(--amber); font-weight: 500; letter-spacing: 1px; }
+
+    /* ── Theme toggle ─────────────────────────────── */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--amber);
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+    }
+
+    /* ── Main layout ───────────────────────────────── */
+    .main-content {
+      padding: 32px 28px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── Page title ────────────────────────────────── */
+    .page-head {
+      margin-bottom: 32px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      animation: fade-up 0.5s ease both;
+      flex-wrap: wrap;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .page-title span { color: var(--amber); }
+
+    .page-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: var(--amber);
+      border: 1px solid var(--amber);
+      color: #070b12;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      border-radius: 4px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-refresh:hover {
+      filter: brightness(0.9);
+      box-shadow: 0 0 16px rgba(232,184,75,0.25);
+    }
+
+    .btn-refresh .spin-icon { display: inline-block; transition: transform 0.3s; }
+    .btn-refresh.loading .spin-icon { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Stat cards ────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 28px;
+      animation: fade-up 0.5s 0.1s ease both;
+    }
+
+    .stat {
+      background: var(--surface);
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-right: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+
+    .stat:last-child { border-right: none; }
+    .stat:hover { background: var(--surface-up); }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .stat-value.amber { color: var(--amber); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.blue  { color: var(--blue); }
+
+    .stat-meta {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Table section ─────────────────────────────── */
+    .table-section {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      animation: fade-up 0.5s 0.2s ease both;
+    }
+
+    .table-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .table-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .section-label {
+      font-size: 0.68rem;
+      color: var(--amber);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .filter-select,
+    .filter-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 7px 12px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color 0.15s, background 0.3s, color 0.3s;
+    }
+
+    .filter-select:focus,
+    .filter-input:focus { border-color: var(--amber); }
+
+    .filter-input { width: 220px; }
+    .filter-input::placeholder { color: var(--text-muted); }
+
+    .record-count {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Data table ────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    thead th {
+      background: rgba(7,11,18,0.8);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-size: 0.62rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    [data-theme="light"] thead th {
+      background: var(--surface-up);
+    }
+
+    thead th:first-child { color: var(--amber); }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover {
+      background: var(--amber-dim);
+    }
+
+    tbody tr:hover td:first-child { color: var(--amber); }
+
+    td {
+      padding: 11px 14px;
+      color: var(--text);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .td-folio {
+      font-weight: 700;
+      color: var(--amber);
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+    }
+
+    .td-name {
+      color: var(--text-bright);
+      font-weight: 500;
+      font-family: var(--font-mono);
+    }
+
+    .td-rfc {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+    }
+
+    .td-amount {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      border: 1px solid transparent;
+    }
+
+    .chip-amber  { color: var(--amber); background: var(--amber-dim); border-color: rgba(232,184,75,0.2); }
+    .chip-green  { color: var(--green); background: var(--green-dim);  border-color: rgba(14,232,160,0.2); }
+    .chip-blue   { color: var(--blue);  background: var(--blue-dim);   border-color: rgba(77,158,255,0.2); }
+    .chip-muted  { color: var(--text-muted); background: rgba(61,80,112,0.15); border-color: var(--border); }
+
+    .score-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-num {
+      font-weight: 700;
+      min-width: 30px;
+    }
+
+    .score-track {
+      width: 48px;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 1s ease;
+    }
+
+    /* ── Empty / loading states ────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+    }
+
+    .empty .empty-code {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    /* ── Responsive ────────────────────────────────── */
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .stat { border-bottom: 1px solid var(--border); }
+      .stat-value { font-size: 1.4rem; }
+    }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .page-title { font-size: 1.4rem; }
+      .main-content { padding: 20px 14px 40px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+    // ── Utilities ──────────────────────────────────
+    function fmt(num) {
+      return new Intl.NumberFormat('es-MX', {
+        style: 'currency', currency: 'MXN', maximumFractionDigits: 0
+      }).format(num);
+    }
+
+    function fmtFecha(iso) {
+      if (!iso) return '\u2014';
+      return new Date(iso).toLocaleDateString('es-MX', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+    }
+
+    function scoreColor(score) {
+      if (score >= 750) return 'var(--green)';
+      if (score >= 680) return 'var(--blue)';
+      if (score >= 600) return 'var(--amber)';
+      return 'var(--red)';
+    }
+
+    // ── Theme Toggle ──────────────────────────────
+    function ThemeToggle({ theme, onToggle }) {
+      return (
+        <button
+          className="theme-toggle"
+          onClick={onToggle}
+          title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        >
+          {theme === 'dark' ? '\u2600' : '\u263D'}
+        </button>
+      );
+    }
+
+    // ── Clock ─────────────────────────────────────
+    function Clock() {
+      const [time, setTime] = useState('');
+      useEffect(() => {
+        function tick() {
+          const now = new Date();
+          const h = String(now.getHours()).padStart(2, '0');
+          const m = String(now.getMinutes()).padStart(2, '0');
+          const s = String(now.getSeconds()).padStart(2, '0');
+          setTime(h + ':' + m + ':' + s);
+        }
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+      }, []);
+      return <span id="clock">{time}</span>;
+    }
+
+    // ── TopBar ────────────────────────────────────
+    function TopBar({ theme, onToggleTheme }) {
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <div className="logo-mark">
+              <span className="bracket">[</span>FC<span className="bracket">]</span>
+              FinCredit
+            </div>
+            <nav className="nav-pill" aria-label="Navegacion principal">
+              <a href="/react">SOLICITAR</a>
+              <a href="/react-admin" className="active">MANAGER</a>
+            </nav>
+          </div>
+          <div className="topbar-right">
+            <span className="live-dot">EN VIVO</span>
+            <Clock />
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          </div>
+        </header>
+      );
+    }
+
+    // ── Animated Counter ──────────────────────────
+    function AnimatedValue({ target, isCurrency }) {
+      const [display, setDisplay] = useState('\u2014');
+      const prevTarget = useRef(null);
+
+      useEffect(() => {
+        if (target === prevTarget.current) return;
+        prevTarget.current = target;
+
+        const duration = 900;
+        const start = performance.now();
+
+        function step(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const value = Math.round(target * eased);
+          setDisplay(isCurrency ? fmt(value) : String(value));
+          if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }, [target, isCurrency]);
+
+      return <React.Fragment>{display}</React.Fragment>;
+    }
+
+    // ── StatsRow ──────────────────────────────────
+    function StatsRow({ stats }) {
+      return (
+        <div className="stats-row" role="region" aria-label="Estadisticas">
+          <div className="stat">
+            <span className="stat-label">Solicitudes</span>
+            <span className="stat-value amber">
+              <AnimatedValue target={stats.total_solicitudes || 0} />
+            </span>
+            <span className="stat-meta">Total registradas</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Aprobados</span>
+            <span className="stat-value green">
+              <AnimatedValue target={stats.aprobados || 0} />
+            </span>
+            <span className="stat-meta">Creditos activos</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Cartera total</span>
+            <span className="stat-value amber">
+              <AnimatedValue target={stats.monto_total || 0} isCurrency />
+            </span>
+            <span className="stat-meta">Monto colocado MXN</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Prestamos</span>
+            <span className="stat-value blue">
+              <AnimatedValue target={stats.prestamos || 0} />
+            </span>
+            <span className="stat-meta">Personales</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Tarjetas</span>
+            <span className="stat-value blue">
+              <AnimatedValue target={stats.tarjetas || 0} />
+            </span>
+            <span className="stat-meta">De credito</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Score Bar Cell ────────────────────────────
+    function ScoreBarCell({ score }) {
+      const col = scoreColor(score);
+      const w = Math.round(((score - 400) / 450) * 100);
+      return (
+        <div className="score-bar">
+          <span className="score-num" style={{ color: col }}>{score}</span>
+          <div className="score-track">
+            <div className="score-fill" style={{ width: w + '%', background: col }}></div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Table Row ─────────────────────────────────
+    function SolicitudRow({ s, index }) {
+      const esTarjeta = s.tipo_producto === 'tarjeta_credito';
+      return (
+        <tr style={{ animationDelay: (index * 30) + 'ms' }}>
+          <td className="td-folio">{s.folio || '\u2014'}</td>
+          <td className="td-name">{s.nombre}</td>
+          <td className="td-rfc">{s.rfc}</td>
+          <td>{s.telefono}</td>
+          <td>
+            <span className={'chip ' + (esTarjeta ? 'chip-blue' : 'chip-amber')}>
+              {esTarjeta ? '\u25C8 TARJETA' : '\u25C6 PRESTAMO'}
+            </span>
+          </td>
+          <td><ScoreBarCell score={s.score_credito} /></td>
+          <td className="td-amount">{fmt(s.monto_ofrecido)}</td>
+          <td style={{ color: 'var(--text-muted)' }}>{(s.tasa_interes * 100).toFixed(1)}%</td>
+          <td style={{ color: 'var(--text-muted)' }}>{s.plazo_meses}m</td>
+          <td>{fmt(s.pago_mensual)}</td>
+          <td style={{ color: 'var(--text-muted)' }}>{fmt(s.ingreso_mensual)}</td>
+          <td>
+            <span className={'chip ' + (s.estado === 'aprobado' ? 'chip-green' : 'chip-muted')}>
+              {s.estado === 'aprobado' ? '\u25CF APROBADO' : (s.estado || '').toUpperCase()}
+            </span>
+          </td>
+          <td style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>{fmtFecha(s.fecha_solicitud)}</td>
+        </tr>
+      );
+    }
+
+    // ── Table Section ─────────────────────────────
+    function TableSection({ solicitudes, loading, error }) {
+      const [filtroTipo, setFiltroTipo] = useState('');
+      const [filtroBuscar, setFiltroBuscar] = useState('');
+
+      const filtradas = useMemo(() => {
+        return solicitudes.filter(s => {
+          const matchTipo = !filtroTipo || s.tipo_producto === filtroTipo;
+          const search = filtroBuscar.toLowerCase();
+          const matchBuscar = !search ||
+            s.nombre.toLowerCase().includes(search) ||
+            s.rfc.toLowerCase().includes(search) ||
+            (s.folio || '').toLowerCase().includes(search);
+          return matchTipo && matchBuscar;
+        });
+      }, [solicitudes, filtroTipo, filtroBuscar]);
+
+      return (
+        <div className="table-section">
+          <div className="table-bar">
+            <div className="table-bar-left">
+              <span className="section-label">// SOLICITUDES REGISTRADAS</span>
+              <select
+                className="filter-select"
+                value={filtroTipo}
+                onChange={e => setFiltroTipo(e.target.value)}
+                aria-label="Filtrar por tipo de producto"
+              >
+                <option value="">TODOS LOS PRODUCTOS</option>
+                <option value="prestamo_personal">PRESTAMO PERSONAL</option>
+                <option value="tarjeta_credito">TARJETA DE CREDITO</option>
+              </select>
+              <input
+                className="filter-input"
+                type="text"
+                placeholder="buscar nombre / RFC / folio..."
+                value={filtroBuscar}
+                onChange={e => setFiltroBuscar(e.target.value)}
+                aria-label="Buscar solicitudes"
+              />
+              <span className="record-count">
+                {filtradas.length} / {solicitudes.length} registros
+              </span>
+            </div>
+          </div>
+
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>FOLIO</th>
+                  <th>NOMBRE</th>
+                  <th>RFC</th>
+                  <th>TELEFONO</th>
+                  <th>PRODUCTO</th>
+                  <th>SCORE</th>
+                  <th>MONTO</th>
+                  <th>TASA</th>
+                  <th>PLAZO</th>
+                  <th>PAGO/MES</th>
+                  <th>INGRESO</th>
+                  <th>ESTADO</th>
+                  <th>FECHA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {error ? (
+                  <tr>
+                    <td colSpan="13">
+                      <div className="empty">
+                        <span className="empty-code">{'\u26A0'}</span>
+                        ERROR AL CONECTAR: {error}
+                      </div>
+                    </td>
+                  </tr>
+                ) : filtradas.length === 0 ? (
+                  <tr>
+                    <td colSpan="13">
+                      <div className="empty">
+                        <span className="empty-code">{loading ? '\u25CC' : '\u2205'}</span>
+                        {loading ? 'CARGANDO REGISTROS...' : 'SIN REGISTROS COINCIDENTES'}
+                      </div>
+                    </td>
+                  </tr>
+                ) : filtradas.map((s, i) => (
+                  <SolicitudRow key={s.id || i} s={s} index={i} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Main App ──────────────────────────────────
+    function App() {
+      const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+      const [stats, setStats] = useState({});
+      const [solicitudes, setSolicitudes] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [refreshing, setRefreshing] = useState(false);
+
+      // Apply theme
+      useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+      }, [theme]);
+
+      const toggleTheme = useCallback(() => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+      }, []);
+
+      // Fetch data
+      const fetchData = useCallback(async () => {
+        setRefreshing(true);
+        try {
+          const [statsRes, solicRes] = await Promise.all([
+            fetch('/api/admin/stats'),
+            fetch('/api/admin/solicitudes'),
+          ]);
+          const statsData = await statsRes.json();
+          const solicData = await solicRes.json();
+
+          // Parse stats.por_tipo
+          let prestamos = 0, tarjetas = 0;
+          (statsData.por_tipo || []).forEach(t => {
+            if (t.tipo_producto === 'prestamo_personal') prestamos = t.cantidad;
+            if (t.tipo_producto === 'tarjeta_credito') tarjetas = t.cantidad;
+          });
+
+          setStats({
+            total_solicitudes: statsData.total_solicitudes || 0,
+            aprobados: statsData.aprobados || 0,
+            monto_total: statsData.monto_total || 0,
+            prestamos,
+            tarjetas,
+          });
+          setSolicitudes(solicData);
+          setError(null);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }, []);
+
+      // Initial load + auto-refresh every 30s
+      useEffect(() => {
+        fetchData();
+        const id = setInterval(fetchData, 30000);
+        return () => clearInterval(id);
+      }, [fetchData]);
+
+      return (
+        <React.Fragment>
+          <TopBar theme={theme} onToggleTheme={toggleTheme} />
+          <main className="main-content" role="main">
+            <div className="page-head">
+              <div>
+                <h1 className="page-title">CENTRO DE <span>MANAGER</span></h1>
+                <p className="page-sub">// CARTERA CREDITICIA &mdash; SISTEMA FINCREDIT v1.0 REACT</p>
+              </div>
+              <button
+                className={'btn-refresh' + (refreshing ? ' loading' : '')}
+                onClick={fetchData}
+              >
+                <span className="spin-icon">{'\u21BB'}</span> ACTUALIZAR
+              </button>
+            </div>
+
+            <StatsRow stats={stats} />
+            <TableSection solicitudes={solicitudes} loading={loading} error={error} />
+          </main>
+        </React.Fragment>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinCredit React — Solicitud de Credito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    /* ── Reset & Variables ─────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #070b12;
+      --surface:      #0c1220;
+      --surface-up:   #111926;
+      --border:       #192033;
+      --border-lit:   #253350;
+      --amber:        #e8b84b;
+      --amber-dim:    rgba(232,184,75,0.10);
+      --amber-glow:   rgba(232,184,75,0.25);
+      --green:        #0ee8a0;
+      --green-dim:    rgba(14,232,160,0.10);
+      --red:          #ff3d5a;
+      --red-dim:      rgba(255,61,90,0.10);
+      --blue:         #4d9eff;
+      --blue-dim:     rgba(77,158,255,0.10);
+      --text:         #b8c8e0;
+      --text-muted:   #3d5070;
+      --text-bright:  #e0ecff;
+      --font-display: 'Syne', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+      --shadow:       0 4px 24px rgba(0,0,0,0.5);
+    }
+
+    [data-theme="light"] {
+      --bg:           #f0f4f8;
+      --surface:      #ffffff;
+      --surface-up:   #e8edf4;
+      --border:       rgba(0,0,0,0.10);
+      --border-lit:   rgba(0,0,0,0.15);
+      --amber:        #d4a017;
+      --amber-dim:    rgba(212,160,23,0.10);
+      --amber-glow:   rgba(212,160,23,0.20);
+      --green:        #059669;
+      --green-dim:    rgba(5,150,105,0.10);
+      --red:          #dc2626;
+      --red-dim:      rgba(220,38,38,0.10);
+      --blue:         #2563eb;
+      --blue-dim:     rgba(37,99,235,0.10);
+      --text:         #334155;
+      --text-muted:   #64748b;
+      --text-bright:  #0f172a;
+      --shadow:       0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* ── Noise texture overlay ─────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    [data-theme="light"] body::before { opacity: 0.15; }
+
+    /* ── Grid background ───────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    [data-theme="light"] body::after { opacity: 0.25; }
+
+    * { position: relative; z-index: 1; }
+
+    /* ── Top Bar ───────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,11,18,0.95);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    [data-theme="light"] .topbar {
+      background: rgba(255,255,255,0.92);
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 24px; }
+
+    .logo-mark {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark .bracket { color: var(--amber); font-family: var(--font-mono); font-weight: 700; }
+
+    .nav-pill {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 0.75rem;
+    }
+
+    .nav-pill a {
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 6px 14px;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-pill a:hover { color: var(--text); background: var(--surface-up); }
+
+    .nav-pill a.active {
+      color: var(--amber);
+      background: var(--amber-dim);
+      border-right: 1px solid var(--border);
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 0.72rem; color: var(--text-muted); }
+
+    .live-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+    }
+
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    #clock { color: var(--amber); font-weight: 500; letter-spacing: 1px; }
+
+    /* ── Theme toggle ─────────────────────────────── */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--amber);
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+    }
+
+    /* ── Main container ────────────────────────────── */
+    .container {
+      max-width: 760px;
+      margin: 32px auto;
+      padding: 0 16px 80px;
+      animation: fade-up 0.5s ease both;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Progress Steps ────────────────────────────── */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      position: relative;
+    }
+
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 18px;
+      left: 60%;
+      width: 80%;
+      height: 1px;
+      background: var(--border-lit);
+      z-index: 0;
+    }
+
+    .step.done:not(:last-child)::after,
+    .step.active:not(:last-child)::after {
+      background: var(--amber);
+    }
+
+    .step-circle {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      background: var(--surface-up);
+      color: var(--text-muted);
+      border: 1px solid var(--border-lit);
+      position: relative; z-index: 1;
+      transition: all 0.3s;
+    }
+
+    .step.active .step-circle {
+      background: var(--amber-dim);
+      color: var(--amber);
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px var(--amber-glow);
+    }
+
+    .step.done .step-circle {
+      background: var(--green-dim);
+      color: var(--green);
+      border-color: var(--green);
+    }
+
+    .step-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .step.active .step-label { color: var(--amber); font-weight: 700; }
+    .step.done .step-label { color: var(--green); }
+
+    /* ── Card ──────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      padding: 20px 28px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-header p {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      margin-top: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .card-body { padding: 24px 28px; }
+
+    /* ── Forms ─────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: var(--font-display);
+    }
+
+    input, select {
+      padding: 10px 14px;
+      border: 1px solid var(--border-lit);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      color: var(--text-bright);
+      background: var(--bg);
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+      outline: none;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 2px var(--amber-glow);
+    }
+
+    input.error, select.error { border-color: var(--red); }
+
+    select option {
+      background: var(--surface);
+      color: var(--text-bright);
+    }
+
+    input::placeholder { color: var(--text-muted); }
+
+    .field-hint {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .field-error {
+      font-size: 0.68rem;
+      color: var(--red);
+      min-height: 1em;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Product selector ──────────────────────────── */
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .product-card {
+      border: 1px solid var(--border-lit);
+      border-radius: 6px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      background: var(--bg);
+    }
+
+    .product-card:hover {
+      border-color: var(--amber);
+      background: var(--amber-dim);
+    }
+
+    .product-card.selected {
+      border-color: var(--amber);
+      background: var(--amber-dim);
+      box-shadow: 0 0 0 2px var(--amber-glow);
+    }
+
+    .product-card .product-icon { font-size: 2rem; display: block; margin-bottom: 10px; }
+
+    .product-card h3 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: 0.3px;
+    }
+
+    .product-card p { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Buttons ───────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 9px 22px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #070b12;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(0.9);
+      box-shadow: 0 0 16px var(--amber-glow);
+    }
+
+    .btn-secondary {
+      background: var(--surface-up);
+      border-color: var(--border-lit);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border-lit);
+      border-color: var(--text-muted);
+      color: var(--text-bright);
+    }
+
+    .btn-success {
+      background: var(--green);
+      border-color: var(--green);
+      color: #070b12;
+      font-weight: 700;
+    }
+
+    .btn-success:hover {
+      filter: brightness(0.9);
+      box-shadow: 0 0 16px rgba(14,232,160,0.3);
+    }
+
+    .btn-danger {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn-danger:hover {
+      filter: brightness(0.9);
+      box-shadow: 0 0 16px rgba(255,61,90,0.3);
+    }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Score / Evaluacion ────────────────────────── */
+    .score-display {
+      text-align: center;
+      padding: 28px 24px;
+      background: var(--surface-up);
+      border: 1px solid var(--border-lit);
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .score-number {
+      font-family: var(--font-display);
+      font-size: 4.5rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .score-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .score-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-top: 12px;
+      letter-spacing: 1px;
+    }
+
+    .eval-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .eval-item {
+      background: var(--surface);
+      padding: 16px 20px;
+      transition: background 0.15s;
+    }
+
+    .eval-item:hover { background: var(--surface-up); }
+
+    .eval-item .eval-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--amber);
+      line-height: 1.2;
+      font-family: var(--font-display);
+    }
+
+    .eval-item .eval-key {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .eval-item.highlight {
+      background: var(--amber-dim);
+      border-bottom: 1px solid var(--border);
+      grid-column: 1 / -1;
+      text-align: center;
+    }
+
+    .eval-item.highlight .eval-val { font-size: 2.2rem; color: var(--amber); }
+
+    /* ── Alerts ────────────────────────────────────── */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      letter-spacing: 0.2px;
+    }
+
+    .alert-info    { background: var(--blue-dim);  border-left: 3px solid var(--blue);  color: var(--blue); }
+    .alert-success { background: var(--green-dim); border-left: 3px solid var(--green); color: var(--green); }
+
+    /* ── Result Final ──────────────────────────────── */
+    .result-hero {
+      text-align: center;
+      padding: 36px 24px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-icon { font-size: 4rem; display: block; margin-bottom: 16px; }
+
+    .result-hero h2 {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .result-hero p { color: var(--text-muted); font-size: 0.8rem; letter-spacing: 0.3px; }
+
+    .result-folio {
+      background: var(--surface-up);
+      border: 1px dashed var(--border-lit);
+      border-radius: 6px;
+      padding: 16px 24px;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .result-folio .folio-num {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 3px;
+      font-family: var(--font-display);
+    }
+
+    .result-folio small {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      margin-top: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .detail-list {
+      list-style: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .detail-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+      transition: background 0.1s;
+    }
+
+    .detail-list li:last-child { border-bottom: none; }
+    .detail-list li:hover { background: var(--surface-up); }
+
+    .detail-list li .key {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .detail-list li .val { font-weight: 700; color: var(--text-bright); }
+
+    /* ── Loading spinner ───────────────────────────── */
+    .spinner-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7,11,18,0.85);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    [data-theme="light"] .spinner-overlay {
+      background: rgba(240,244,248,0.85);
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 2px solid var(--border-lit);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Scrollbar ─────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    /* ── Responsive ────────────────────────────────── */
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+      .product-grid { grid-template-columns: 1fr; }
+      .eval-grid { grid-template-columns: 1fr; }
+      .eval-item.highlight { grid-column: 1; }
+      .card-body, .card-header { padding: 16px 18px; }
+      .steps-bar { overflow-x: auto; gap: 4px; padding: 16px; }
+      .step-label { display: none; }
+      .topbar { padding: 0 16px; }
+      .container { margin: 16px auto; }
+      .btn-row { justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ── Utilities ──────────────────────────────────
+    function fmt(num) {
+      return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(num);
+    }
+
+    function fmtPct(num) {
+      return (num * 100).toFixed(1) + '%';
+    }
+
+    function fmtFecha(iso) {
+      if (!iso) return '\u2014';
+      return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+
+    function validarRFC(rfc) {
+      return /^[A-Z\u00d1&]{3,4}\d{6}[A-Z0-9]{3}$/i.test(rfc.trim());
+    }
+
+    function scoreColor(score) {
+      if (score >= 750) return '#0ee8a0';
+      if (score >= 680) return '#4d9eff';
+      if (score >= 600) return '#e8b84b';
+      return '#ff3d5a';
+    }
+
+    // For light mode, use darker variants for contrast
+    function scoreColorThemed(score, theme) {
+      if (theme === 'light') {
+        if (score >= 750) return '#059669';
+        if (score >= 680) return '#2563eb';
+        if (score >= 600) return '#d4a017';
+        return '#dc2626';
+      }
+      return scoreColor(score);
+    }
+
+    // ── Theme Toggle Button ───────────────────────
+    function ThemeToggle({ theme, onToggle }) {
+      return (
+        <button
+          className="theme-toggle"
+          onClick={onToggle}
+          title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        >
+          {theme === 'dark' ? '\u2600' : '\u263D'}
+        </button>
+      );
+    }
+
+    // ── Clock ─────────────────────────────────────
+    function Clock() {
+      const [time, setTime] = useState('');
+      useEffect(() => {
+        function tick() {
+          const now = new Date();
+          const h = String(now.getHours()).padStart(2, '0');
+          const m = String(now.getMinutes()).padStart(2, '0');
+          const s = String(now.getSeconds()).padStart(2, '0');
+          setTime(h + ':' + m + ':' + s);
+        }
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+      }, []);
+      return <span id="clock">{time}</span>;
+    }
+
+    // ── TopBar ────────────────────────────────────
+    function TopBar({ theme, onToggleTheme }) {
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <div className="logo-mark">
+              <span className="bracket">[</span>FC<span className="bracket">]</span>
+              FinCredit
+            </div>
+            <nav className="nav-pill" aria-label="Navegacion principal">
+              <a href="/react" className="active">SOLICITAR</a>
+              <a href="/react-admin">MANAGER</a>
+            </nav>
+          </div>
+          <div className="topbar-right">
+            <span className="live-dot">EN LINEA</span>
+            <Clock />
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          </div>
+        </header>
+      );
+    }
+
+    // ── StepsBar ──────────────────────────────────
+    function StepsBar({ currentStep }) {
+      const steps = [
+        { num: 1, label: 'Datos\nPersonales' },
+        { num: 2, label: 'Informacion\nFinanciera' },
+        { num: 3, label: 'Evaluacion\nde Credito' },
+        { num: 4, label: 'Resultado\nFinal' },
+      ];
+      return (
+        <div className="steps-bar" role="navigation" aria-label="Progreso del formulario">
+          {steps.map(s => {
+            let cls = 'step';
+            if (s.num < currentStep) cls += ' done';
+            if (s.num === currentStep) cls += ' active';
+            return (
+              <div className={cls} key={s.num} aria-current={s.num === currentStep ? 'step' : undefined}>
+                <div className="step-circle">{s.num}</div>
+                <div className="step-label" dangerouslySetInnerHTML={{ __html: s.label.replace('\n', '<br/>') }} />
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // ── Spinner ───────────────────────────────────
+    function Spinner({ message }) {
+      if (!message) return null;
+      return (
+        <div className="spinner-overlay" role="alert" aria-live="assertive">
+          <div className="spinner"></div>
+          <span>{message}</span>
+        </div>
+      );
+    }
+
+    // ── Step 1: Datos Personales ──────────────────
+    function Step1({ formData, setFormData, errors, onNext }) {
+      const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      };
+
+      return (
+        <div className="card" style={{ animation: 'fadeIn 0.3s ease' }}>
+          <div className="card-header">
+            <h2>Datos Personales</h2>
+            <p>Ingresa tus datos para comenzar tu solicitud de credito.</p>
+          </div>
+          <div className="card-body">
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="nombre">Nombre completo *</label>
+                <input
+                  type="text" id="nombre"
+                  placeholder="Ej. Juan Perez Lopez"
+                  autoComplete="name"
+                  value={formData.nombre}
+                  onChange={e => handleChange('nombre', e.target.value)}
+                  className={errors.nombre ? 'error' : ''}
+                  aria-invalid={!!errors.nombre}
+                  aria-describedby={errors.nombre ? 'err-nombre' : undefined}
+                />
+                <span className="field-error" id="err-nombre">
+                  {errors.nombre || ''}
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="telefono">Telefono *</label>
+                <input
+                  type="tel" id="telefono"
+                  placeholder="Ej. 5512345678"
+                  maxLength="10"
+                  autoComplete="tel"
+                  value={formData.telefono}
+                  onChange={e => handleChange('telefono', e.target.value)}
+                  className={errors.telefono ? 'error' : ''}
+                  aria-invalid={!!errors.telefono}
+                  aria-describedby={errors.telefono ? 'err-telefono' : undefined}
+                />
+                <span className="field-error" id="err-telefono">
+                  {errors.telefono || ''}
+                </span>
+              </div>
+
+              <div className="form-group full">
+                <label htmlFor="direccion">Direccion *</label>
+                <input
+                  type="text" id="direccion"
+                  placeholder="Calle, Numero, Colonia, Ciudad, CP"
+                  autoComplete="street-address"
+                  value={formData.direccion}
+                  onChange={e => handleChange('direccion', e.target.value)}
+                  className={errors.direccion ? 'error' : ''}
+                  aria-invalid={!!errors.direccion}
+                  aria-describedby={errors.direccion ? 'err-direccion' : undefined}
+                />
+                <span className="field-error" id="err-direccion">
+                  {errors.direccion || ''}
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="rfc">RFC *</label>
+                <input
+                  type="text" id="rfc"
+                  placeholder="Ej. PELJ800101ABC"
+                  maxLength="13"
+                  style={{ textTransform: 'uppercase' }}
+                  value={formData.rfc}
+                  onChange={e => handleChange('rfc', e.target.value.toUpperCase())}
+                  className={errors.rfc ? 'error' : ''}
+                  aria-invalid={!!errors.rfc}
+                  aria-describedby={errors.rfc ? 'err-rfc' : undefined}
+                />
+                <span className="field-hint">Persona fisica: 13 chars / Moral: 12 chars</span>
+                <span className="field-error" id="err-rfc">
+                  {errors.rfc || ''}
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label>Tipo de producto *</label>
+                <div className="product-grid">
+                  <div
+                    className={'product-card' + (formData.tipo_producto === 'prestamo_personal' ? ' selected' : '')}
+                    onClick={() => handleChange('tipo_producto', 'prestamo_personal')}
+                    role="button"
+                    tabIndex="0"
+                    aria-pressed={formData.tipo_producto === 'prestamo_personal'}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChange('tipo_producto', 'prestamo_personal'); }}}
+                  >
+                    <span className="product-icon">&#x1F4B3;</span>
+                    <h3>Prestamo Personal</h3>
+                    <p>Recibe efectivo directo a tu cuenta</p>
+                  </div>
+                  <div
+                    className={'product-card' + (formData.tipo_producto === 'tarjeta_credito' ? ' selected' : '')}
+                    onClick={() => handleChange('tipo_producto', 'tarjeta_credito')}
+                    role="button"
+                    tabIndex="0"
+                    aria-pressed={formData.tipo_producto === 'tarjeta_credito'}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChange('tipo_producto', 'tarjeta_credito'); }}}
+                  >
+                    <span className="product-icon">&#x1F48E;</span>
+                    <h3>Tarjeta de Credito</h3>
+                    <p>Linea de credito revolvente</p>
+                  </div>
+                </div>
+                <span className="field-error">
+                  {errors.tipo_producto || ''}
+                </span>
+              </div>
+            </div>
+
+            <div className="btn-row">
+              <button className="btn btn-primary" onClick={onNext}>
+                Continuar &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Step 2: Informacion Financiera ────────────
+    function Step2({ formData, setFormData, errors, onBack, onNext }) {
+      const handleChange = (field, value) => {
+        setFormData(prev => {
+          const next = { ...prev, [field]: value };
+          if (field === 'ingreso_mensual') {
+            const val = parseFloat(value);
+            if (!isNaN(val) && val > 0) {
+              next.ingreso_anual = String(Math.round(val * 12));
+            }
+          }
+          return next;
+        });
+      };
+
+      return (
+        <div className="card" style={{ animation: 'fadeIn 0.3s ease' }}>
+          <div className="card-header">
+            <h2>Informacion Financiera</h2>
+            <p>Esta informacion nos permite calcular el credito que podemos ofrecerte.</p>
+          </div>
+          <div className="card-body">
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="ocupacion">Ocupacion / Empleo *</label>
+                <select
+                  id="ocupacion"
+                  value={formData.ocupacion}
+                  onChange={e => handleChange('ocupacion', e.target.value)}
+                  className={errors.ocupacion ? 'error' : ''}
+                  aria-invalid={!!errors.ocupacion}
+                >
+                  <option value="">-- Selecciona --</option>
+                  <option value="empleado">Empleado</option>
+                  <option value="independiente">Trabajador Independiente</option>
+                  <option value="empresario">Empresario / Dueno de negocio</option>
+                  <option value="pensionado">Pensionado / Jubilado</option>
+                  <option value="otro">Otro</option>
+                </select>
+                <span className="field-error">{errors.ocupacion || ''}</span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="ingreso_mensual">Ingreso mensual neto (MXN) *</label>
+                <input
+                  type="number" id="ingreso_mensual"
+                  placeholder="Ej. 25000"
+                  min="1000" step="500"
+                  value={formData.ingreso_mensual}
+                  onChange={e => handleChange('ingreso_mensual', e.target.value)}
+                  className={errors.ingreso_mensual ? 'error' : ''}
+                  aria-invalid={!!errors.ingreso_mensual}
+                />
+                <span className="field-error">{errors.ingreso_mensual || ''}</span>
+              </div>
+
+              <div className="form-group full">
+                <div className="alert alert-info">
+                  <span>El ingreso anual se calculara automaticamente multiplicando tu ingreso mensual x 12. Puedes ajustarlo si tus ingresos son variables.</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="ingreso_anual">Ingreso anual neto (MXN)</label>
+                <input
+                  type="number" id="ingreso_anual"
+                  placeholder="Se calcula automaticamente"
+                  min="0" step="1000"
+                  value={formData.ingreso_anual}
+                  onChange={e => handleChange('ingreso_anual', e.target.value)}
+                />
+                <span className="field-hint">Puedes modificarlo si tus ingresos son variables</span>
+              </div>
+            </div>
+
+            <div className="btn-row">
+              <button className="btn btn-secondary" onClick={onBack}>&larr; Regresar</button>
+              <button className="btn btn-primary" onClick={onNext}>Evaluar Credito &rarr;</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Step 3: Evaluacion ────────────────────────
+    function Step3({ evaluacion, tipo_producto, theme, onBack, onReject, onAccept }) {
+      if (!evaluacion) return null;
+      const ev = evaluacion;
+      const col = scoreColorThemed(ev.score, theme);
+      const esTarjeta = tipo_producto === 'tarjeta_credito';
+
+      return (
+        <div className="card" style={{ animation: 'fadeIn 0.3s ease' }}>
+          <div className="card-header">
+            <h2>Evaluacion de Credito</h2>
+            <p>Resultado de tu analisis crediticio.</p>
+          </div>
+          <div className="card-body">
+            <div className="score-display">
+              <div className="score-number" style={{ color: col }}>{ev.score}</div>
+              <div className="score-label">Score de Credito</div>
+              <span className="score-badge" style={{
+                color: col,
+                background: col + '18',
+                border: '1px solid ' + col + '44'
+              }}>
+                {ev.clasificacion}
+              </span>
+            </div>
+
+            <div className="eval-grid">
+              <div className="eval-item highlight">
+                <div className="eval-val">{fmt(ev.monto_ofrecido)}</div>
+                <div className="eval-key">{esTarjeta ? 'Limite de Credito Ofrecido' : 'Monto de Prestamo Ofrecido'}</div>
+              </div>
+              <div className="eval-item">
+                <div className="eval-val">{fmtPct(ev.tasa_interes)}</div>
+                <div className="eval-key">Tasa de interes anual</div>
+              </div>
+              <div className="eval-item">
+                <div className="eval-val">{ev.plazo_meses} meses</div>
+                <div className="eval-key">{esTarjeta ? 'Plazo de referencia' : 'Plazo del prestamo'}</div>
+              </div>
+              <div className="eval-item">
+                <div className="eval-val">{fmt(ev.pago_mensual)}</div>
+                <div className="eval-key">{esTarjeta ? 'Pago minimo mensual (3%)' : 'Pago mensual estimado'}</div>
+              </div>
+              <div className="eval-item">
+                <div className="eval-val">{ev.rfc_valido ? 'Valido' : 'No estandar'}</div>
+                <div className="eval-key">Validacion de RFC</div>
+              </div>
+            </div>
+
+            <div className="alert alert-info">
+              <span>Esta es una simulacion de evaluacion. Los montos y tasas reales pueden variar. Al aceptar, tu credito quedara registrado en el sistema.</span>
+            </div>
+
+            <div className="btn-row">
+              <button className="btn btn-secondary" onClick={onBack}>&larr; Regresar</button>
+              <button className="btn btn-danger" onClick={onReject}>Rechazar oferta</button>
+              <button className="btn btn-success" onClick={onAccept}>Aceptar y generar credito</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Step 4: Resultado Final ───────────────────
+    function Step4({ resultado }) {
+      if (!resultado) return null;
+      const data = resultado;
+      const esTarjeta = data.tipo_producto === 'tarjeta_credito';
+
+      return (
+        <div className="card" style={{ animation: 'fadeIn 0.3s ease' }}>
+          <div className="card-header">
+            <h2>Credito Autorizado</h2>
+          </div>
+          <div className="card-body">
+            <div className="result-hero">
+              <span className="result-icon">&#x1F389;</span>
+              <h2>Felicidades, {(data.nombre || '').split(' ')[0]}!</h2>
+              <p>Tu {esTarjeta ? 'tarjeta de credito' : 'prestamo personal'} ha sido autorizado exitosamente.</p>
+            </div>
+
+            <div className="result-folio">
+              <div className="folio-num">{data.folio}</div>
+              <small>Numero de Folio de Solicitud</small>
+            </div>
+
+            <ul className="detail-list">
+              <li>
+                <span className="key">Tipo de producto</span>
+                <span className="val">{esTarjeta ? 'Tarjeta de Credito' : 'Prestamo Personal'}</span>
+              </li>
+              <li>
+                <span className="key">{esTarjeta ? 'Limite aprobado' : 'Monto aprobado'}</span>
+                <span className="val" style={{ color: 'var(--green)', fontSize: '1.1rem' }}>{fmt(data.monto_aprobado)}</span>
+              </li>
+              <li>
+                <span className="key">Tasa de interes anual</span>
+                <span className="val">{fmtPct(data.tasa_interes)}</span>
+              </li>
+              <li>
+                <span className="key">Plazo</span>
+                <span className="val">{data.plazo_meses} meses</span>
+              </li>
+              <li>
+                <span className="key">{esTarjeta ? 'Pago minimo mensual' : 'Pago mensual'}</span>
+                <span className="val">{fmt(data.pago_mensual)}</span>
+              </li>
+              <li>
+                <span className="key">Fecha de inicio</span>
+                <span className="val">{fmtFecha(data.fecha_aprobacion)}</span>
+              </li>
+              <li>
+                <span className="key">Fecha de vencimiento</span>
+                <span className="val">{fmtFecha(data.fecha_vencimiento)}</span>
+              </li>
+              <li>
+                <span className="key">Folio del credito</span>
+                <span className="val">{data.folio_credito}</span>
+              </li>
+            </ul>
+
+            <div className="alert alert-success" style={{ marginTop: '20px' }}>
+              <span>Tu credito ha sido registrado. Guarda tu folio <strong>{data.folio}</strong> para cualquier consulta.</span>
+            </div>
+
+            <div className="btn-row">
+              <button className="btn btn-secondary" onClick={() => window.location.href = '/react-admin'}>Ver Panel Admin</button>
+              <button className="btn btn-primary" onClick={() => window.location.reload()}>+ Nueva Solicitud</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Main App ──────────────────────────────────
+    function App() {
+      const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+      const [step, setStep] = useState(1);
+      const [spinnerMsg, setSpinnerMsg] = useState('');
+      const [errors, setErrors] = useState({});
+      const [evaluacion, setEvaluacion] = useState(null);
+      const [resultado, setResultado] = useState(null);
+      const [formData, setFormData] = useState({
+        nombre: '',
+        telefono: '',
+        direccion: '',
+        rfc: '',
+        tipo_producto: '',
+        ocupacion: '',
+        ingreso_mensual: '',
+        ingreso_anual: '',
+      });
+
+      // Apply theme to document
+      useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+      }, [theme]);
+
+      const toggleTheme = useCallback(() => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+      }, []);
+
+      const goToStep = useCallback((n) => {
+        setStep(n);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, []);
+
+      // ── Validation ──
+      const validateStep1 = useCallback(() => {
+        const errs = {};
+        const { nombre, telefono, direccion, rfc, tipo_producto } = formData;
+        if (!nombre.trim() || nombre.trim().length < 3) errs.nombre = 'Campo requerido (minimo 3 caracteres)';
+        if (!/^\d{10}$/.test(telefono.trim())) errs.telefono = 'Ingresa 10 digitos';
+        if (!direccion.trim() || direccion.trim().length < 5) errs.direccion = 'Campo requerido';
+        if (!validarRFC(rfc)) errs.rfc = 'RFC con formato invalido (ej: PELJ800101ABC)';
+        if (!tipo_producto) errs.tipo_producto = 'Selecciona un tipo de producto';
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+      }, [formData]);
+
+      const validateStep2 = useCallback(() => {
+        const errs = {};
+        const { ocupacion, ingreso_mensual } = formData;
+        if (!ocupacion) errs.ocupacion = 'Selecciona una opcion';
+        const ingreso = parseFloat(ingreso_mensual);
+        if (!ingreso || ingreso < 1000) errs.ingreso_mensual = 'Ingresa un monto valido (minimo $1,000)';
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+      }, [formData]);
+
+      // ── Navigation handlers ──
+      const handleStep1Next = useCallback(() => {
+        if (validateStep1()) {
+          setErrors({});
+          goToStep(2);
+        }
+      }, [validateStep1, goToStep]);
+
+      const handleStep2Back = useCallback(() => {
+        setErrors({});
+        goToStep(1);
+      }, [goToStep]);
+
+      const handleStep2Next = useCallback(async () => {
+        if (!validateStep2()) return;
+        setErrors({});
+        setSpinnerMsg('Analizando tu perfil crediticio...');
+
+        try {
+          const payload = {
+            nombre: formData.nombre.trim(),
+            telefono: formData.telefono.trim(),
+            direccion: formData.direccion.trim(),
+            rfc: formData.rfc.trim().toUpperCase(),
+            tipo_producto: formData.tipo_producto,
+            ingreso_mensual: parseFloat(formData.ingreso_mensual),
+          };
+
+          const res = await fetch('/api/evaluar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error en la evaluacion');
+
+          setEvaluacion(data);
+          goToStep(3);
+        } catch (err) {
+          alert('Error al evaluar: ' + err.message);
+        } finally {
+          setSpinnerMsg('');
+        }
+      }, [validateStep2, formData, goToStep]);
+
+      const handleStep3Back = useCallback(() => {
+        goToStep(2);
+      }, [goToStep]);
+
+      const handleReject = useCallback(() => {
+        if (window.confirm('Estas seguro de que deseas rechazar la oferta? Tendras que iniciar una nueva solicitud.')) {
+          window.location.reload();
+        }
+      }, []);
+
+      const handleAccept = useCallback(async () => {
+        setSpinnerMsg('Generando tu credito...');
+
+        try {
+          const payload = {
+            nombre: formData.nombre.trim(),
+            telefono: formData.telefono.trim(),
+            direccion: formData.direccion.trim(),
+            rfc: formData.rfc.trim().toUpperCase(),
+            tipo_producto: formData.tipo_producto,
+            ocupacion: formData.ocupacion,
+            ingreso_mensual: parseFloat(formData.ingreso_mensual),
+            ingreso_anual: parseFloat(formData.ingreso_anual) || parseFloat(formData.ingreso_mensual) * 12,
+            score_credito: evaluacion.score,
+            monto_ofrecido: evaluacion.monto_ofrecido,
+            tasa_interes: evaluacion.tasa_interes,
+            plazo_meses: evaluacion.plazo_meses,
+            pago_mensual: evaluacion.pago_mensual,
+          };
+
+          const res = await fetch('/api/solicitud', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error al generar credito');
+
+          setResultado({ ...data, tipo_producto: formData.tipo_producto });
+          goToStep(4);
+        } catch (err) {
+          alert('Error al procesar: ' + err.message);
+        } finally {
+          setSpinnerMsg('');
+        }
+      }, [formData, evaluacion, goToStep]);
+
+      return (
+        <React.Fragment>
+          <TopBar theme={theme} onToggleTheme={toggleTheme} />
+          <Spinner message={spinnerMsg} />
+          <main className="container" role="main">
+            <StepsBar currentStep={step} />
+            {step === 1 && (
+              <Step1
+                formData={formData}
+                setFormData={setFormData}
+                errors={errors}
+                onNext={handleStep1Next}
+              />
+            )}
+            {step === 2 && (
+              <Step2
+                formData={formData}
+                setFormData={setFormData}
+                errors={errors}
+                onBack={handleStep2Back}
+                onNext={handleStep2Next}
+              />
+            )}
+            {step === 3 && (
+              <Step3
+                evaluacion={evaluacion}
+                tipo_producto={formData.tipo_producto}
+                theme={theme}
+                onBack={handleStep3Back}
+                onReject={handleReject}
+                onAccept={handleAccept}
+              />
+            )}
+            {step === 4 && (
+              <Step4 resultado={resultado} />
+            )}
+          </main>
+        </React.Fragment>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

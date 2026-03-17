@@ -104,3 +104,119 @@ Score color thresholds used in `app.js`: green ≥750, blue ≥680, amber ≥600
 | `POST` | `/api/solicitud` | Accept offer and persist credit |
 | `GET`  | `/api/admin/solicitudes` | All records (joined) |
 | `GET`  | `/api/admin/stats` | Aggregate counts and totals |
+
+---
+
+## Subagentes y Skills — Reglas de Delegación
+
+Este proyecto cuenta con subagentes especializados y skills. Aplica estas reglas en cada request para delegar correctamente.
+
+---
+
+### Subagentes del proyecto (`.claude/agents/`)
+
+#### `frontend-ui-specialist` — Especialista en UI/UX
+**Modelo:** Opus | **Memoria:** persistente por proyecto
+
+**Delegar SIEMPRE cuando:**
+- Se modifica cualquier archivo en `public/` (`index.html`, `app.js`, `style.css`, `admin.html`, `react-app/`)
+- Se agregan nuevos componentes, pasos al wizard, o páginas al panel admin
+- El usuario reporta problemas visuales, de layout o de responsividad
+- Se implementan cambios de diseño, temas (dark/light), tipografía o colores
+- Se quiere verificar accesibilidad (WCAG), contraste de colores o navegación por teclado
+- Se agrega o modifica código React en `public/react-app/`
+
+**NO delegar cuando:**
+- El cambio es solo backend (`server.js`, `database.js`)
+- Es una pregunta explicativa sin cambios de código
+
+**Invocación:** `Task tool` con `subagent_type: frontend-ui-specialist`
+
+---
+
+#### `web-security-auditor` — Auditor de Seguridad
+**Modelo:** Opus | **Memoria:** persistente por proyecto
+
+**Delegar SIEMPRE cuando:**
+- Se escribe o modifica un endpoint de API (`server.js`)
+- Se agrega lógica que procesa `req.body` o parámetros de usuario
+- Se modifica `database.js` o la capa de persistencia
+- Se agregan dependencias npm nuevas (`package.json`)
+- El usuario pide revisión de seguridad explícita
+- Se detecta uso de `innerHTML`, `eval()`, o concatenación de strings en queries
+
+**Delegar PROACTIVAMENTE después de:**
+- Crear nuevas rutas `POST`/`GET` en `server.js`
+- Cualquier cambio en las funciones `generarScore()`, `calcularOferta()` o validación de RFC
+- Cambios en `GET /api/admin/*` (endpoints de administración sin auth)
+
+**NO delegar cuando:**
+- El cambio es solo CSS/HTML estático sin lógica
+- Es una consulta o explicación sin modificación de código
+
+**Invocación:** `Task tool` con `subagent_type: web-security-auditor`
+
+---
+
+### Skills disponibles — Cuándo invocar cada uno
+
+#### Skills de desarrollo y calidad
+
+| Skill | Invocar cuando... | Comando |
+|-------|-------------------|---------|
+| `best-practices` | El usuario da una instrucción vaga o antes de implementar una tarea compleja; para mejorar el prompt antes de ejecutar | `/best-practices` |
+| `code-review` | Se completa un PR o bloque de código y se quiere revisión de calidad | `/code-review` |
+| `code-refactoring` | El usuario pide limpiar, simplificar o mejorar código existente sin cambiar comportamiento | `/code-refactoring` |
+| `javascript-typescript` | Tareas de JS moderno (ES2024+), patrones async/await, Node.js avanzado | `/javascript-typescript` |
+| `backend-development` | Diseño de APIs REST, esquemas de BD, arquitectura de microservicios | `/backend-development` |
+| `database-design` | Migración desde JSON a PostgreSQL/SQLite, optimización de queries | `/database-design` |
+| `security-reviewer` | Auditoría de seguridad completa del proyecto (alternativa al subagente) | `/security-reviewer` |
+| `vercel-react-best-practices` | Optimización de React, patrones Next.js, performance en componentes | `/vercel-react-best-practices` |
+
+#### Skills de frontend y diseño
+
+| Skill | Invocar cuando... | Comando |
+|-------|-------------------|---------|
+| `frontend-design` | Crear nuevas páginas, componentes o interfaces desde cero con alta calidad visual | `/frontend-design` |
+| `fincredit-frontend-style` | Asegurar consistencia visual con el design system del proyecto al agregar nuevas pantallas | `/fincredit-frontend-style` |
+| `brand-guidelines` | Aplicar colores y tipografía de marca consistentemente | `/brand-guidelines` |
+| `figma` / `figma-implement-design` | El usuario provee un URL o nodo de Figma para implementar diseño | `/figma` |
+
+#### Skills de documentación y contenido
+
+| Skill | Invocar cuando... | Comando |
+|-------|-------------------|---------|
+| `code-documentation` | Documentar APIs, generar README, escribir JSDoc | `/code-documentation` |
+| `changelog-generator` | Generar notas de versión desde historial de commits | `/changelog-generator` |
+| `content-research-writer` | Escribir artículos, documentación técnica, tutoriales o reportes | `/content-research-writer` |
+| `doc-coauthoring` | Redactar specs técnicas, propuestas o documentos estructurados | `/doc-coauthoring` |
+
+#### Skills de DevOps y productividad
+
+| Skill | Invocar cuando... | Comando |
+|-------|-------------------|---------|
+| `gh-fix-ci` | Depurar o corregir checks fallidos en GitHub Actions | `/gh-fix-ci` |
+| `find-skills` | El usuario pregunta si existe un skill para una tarea específica | `/find-skills` |
+| `ask-questions-if-underspecified` | La instrucción del usuario es ambigua y se necesita clarificar antes de implementar | `/ask-questions-if-underspecified` |
+
+---
+
+### Reglas de delegación paralela
+
+Cuando una tarea involucra **múltiples dominios simultáneamente**, lanzar subagentes en paralelo:
+
+```
+Nueva ruta API + cambio de frontend
+→ Lanzar web-security-auditor + frontend-ui-specialist en paralelo
+```
+
+```
+Nuevo componente React + revisión de calidad
+→ Lanzar frontend-ui-specialist (review) en paralelo con la implementación
+```
+
+### Regla de prioridad
+
+1. **Subagentes del proyecto** (`frontend-ui-specialist`, `web-security-auditor`) — mayor prioridad, tienen contexto específico del proyecto y memoria persistente.
+2. **Skills de desarrollo** (`best-practices`, `code-review`, `security-reviewer`) — usar cuando los subagentes no cubren el dominio exacto.
+3. **Skills generales** — usar para tareas fuera del ciclo de desarrollo principal.

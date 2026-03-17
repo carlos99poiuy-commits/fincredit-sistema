@@ -241,7 +241,7 @@
     /* ── Stat cards ────────────────────────────────── */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 1px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -277,6 +277,9 @@
       color: var(--text-bright);
       line-height: 1;
       letter-spacing: -1px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .stat-value.amber { color: var(--amber); }
@@ -495,6 +498,10 @@
     tbody tr { animation: scan-in 0.25s ease both; }
 
     /* ── Responsive ────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+    }
+
     @media (max-width: 900px) {
       .stats-row { grid-template-columns: repeat(3, 1fr); }
       .stat { border-bottom: 1px solid var(--border); }
@@ -505,6 +512,13 @@
       .stats-row { grid-template-columns: 1fr 1fr; }
       .page-title { font-size: 1.4rem; }
       .main { padding: 20px 14px 40px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
@@ -568,6 +582,11 @@
       <span class="stat-value blue" id="stat-tarjetas" data-target="0">—</span>
       <span class="stat-meta">De crédito</span>
     </div>
+    <div class="stat">
+      <span class="stat-label">Hipotecarios</span>
+      <span class="stat-value blue" id="stat-hipotecarios" data-target="0">—</span>
+      <span class="stat-meta">Vivienda</span>
+    </div>
   </div>
 
   <!-- Tabla -->
@@ -579,6 +598,7 @@
           <option value="">TODOS LOS PRODUCTOS</option>
           <option value="prestamo_personal">PRÉSTAMO PERSONAL</option>
           <option value="tarjeta_credito">TARJETA DE CRÉDITO</option>
+          <option value="hipotecario">CRÉDITO HIPOTECARIO</option>
         </select>
         <input class="filter-input" type="text" id="filtro-buscar"
           placeholder="buscar nombre / RFC / folio..." oninput="aplicarFiltros()" />
@@ -684,13 +704,15 @@ async function cargarEstadisticas() {
     animateCount(document.getElementById('stat-aprobados'), stats.aprobados);
     animateCount(document.getElementById('stat-monto'), stats.monto_total, true);
 
-    let prestamos = 0, tarjetas = 0;
+    let prestamos = 0, tarjetas = 0, hipotecarios = 0;
     (stats.por_tipo || []).forEach(t => {
       if (t.tipo_producto === 'prestamo_personal') prestamos = t.cantidad;
       if (t.tipo_producto === 'tarjeta_credito') tarjetas = t.cantidad;
+      if (t.tipo_producto === 'hipotecario') hipotecarios = t.cantidad;
     });
     animateCount(document.getElementById('stat-prestamos'), prestamos);
     animateCount(document.getElementById('stat-tarjetas'), tarjetas);
+    animateCount(document.getElementById('stat-hipotecarios'), hipotecarios);
   } catch (err) {
     console.error('Stats error:', err);
   }
@@ -750,8 +772,11 @@ function renderTabla(solicitudes) {
 
   tbody.innerHTML = solicitudes.map((s, i) => {
     const esTarjeta = s.tipo_producto === 'tarjeta_credito';
+    const esHipotecario = s.tipo_producto === 'hipotecario';
     const scoreW = Math.round(((s.score_credito - 400) / 450) * 100);
     const col = scoreColor(s.score_credito);
+    const chipClass = esHipotecario ? 'chip-green' : esTarjeta ? 'chip-blue' : 'chip-amber';
+    const chipLabel = esHipotecario ? '🏠 HIPOTECARIO' : esTarjeta ? '◈ TARJETA' : '◆ PRÉSTAMO';
 
     return `<tr style="animation-delay:${i * 30}ms">
       <td class="td-folio">${s.folio || '—'}</td>
@@ -759,8 +784,8 @@ function renderTabla(solicitudes) {
       <td class="td-rfc">${s.rfc}</td>
       <td>${s.telefono}</td>
       <td>
-        <span class="chip ${esTarjeta ? 'chip-blue' : 'chip-amber'}">
-          ${esTarjeta ? '◈ TARJETA' : '◆ PRÉSTAMO'}
+        <span class="chip ${chipClass}">
+          ${chipLabel}
         </span>
       </td>
       <td>

@@ -401,7 +401,7 @@
     /* ── Product selector ──────────────────────────── */
     .product-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 14px;
       margin-top: 4px;
     }
@@ -987,6 +987,18 @@
                     <h3>Tarjeta de Credito</h3>
                     <p>Linea de credito revolvente</p>
                   </div>
+                  <div
+                    className={'product-card' + (formData.tipo_producto === 'hipotecario' ? ' selected' : '')}
+                    onClick={() => handleChange('tipo_producto', 'hipotecario')}
+                    role="button"
+                    tabIndex="0"
+                    aria-pressed={formData.tipo_producto === 'hipotecario'}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChange('tipo_producto', 'hipotecario'); }}}
+                  >
+                    <span className="product-icon">&#x1F3E0;</span>
+                    <h3>Credito Hipotecario</h3>
+                    <p>Financia tu hogar a largo plazo</p>
+                  </div>
                 </div>
                 <span className="field-error">
                   {errors.tipo_producto || ''}
@@ -1077,6 +1089,20 @@
                 />
                 <span className="field-hint">Puedes modificarlo si tus ingresos son variables</span>
               </div>
+
+              {formData.tipo_producto === 'hipotecario' && (
+                <div className="form-group full">
+                  <label htmlFor="monto_infonavit">Monto Infonavit (MXN)</label>
+                  <input
+                    type="number" id="monto_infonavit"
+                    placeholder="0"
+                    min="0" step="1000"
+                    value={formData.monto_infonavit}
+                    onChange={e => handleChange('monto_infonavit', e.target.value)}
+                  />
+                  <span className="field-hint">Subsidio del fondo de vivienda (opcional)</span>
+                </div>
+              )}
             </div>
 
             <div className="btn-row">
@@ -1094,6 +1120,11 @@
       const ev = evaluacion;
       const col = scoreColorThemed(ev.score, theme);
       const esTarjeta = tipo_producto === 'tarjeta_credito';
+      const esHipotecario = tipo_producto === 'hipotecario';
+
+      const labelMonto = esHipotecario ? 'Monto Hipotecario Ofrecido' : esTarjeta ? 'Limite de Credito Ofrecido' : 'Monto de Prestamo Ofrecido';
+      const labelPlazo = esHipotecario ? 'Plazo del credito' : esTarjeta ? 'Plazo de referencia' : 'Plazo del prestamo';
+      const labelPago = esHipotecario ? 'Pago mensual estimado' : esTarjeta ? 'Pago minimo mensual (3%)' : 'Pago mensual estimado';
 
       return (
         <div className="card" style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -1117,7 +1148,7 @@
             <div className="eval-grid">
               <div className="eval-item highlight">
                 <div className="eval-val">{fmt(ev.monto_ofrecido)}</div>
-                <div className="eval-key">{esTarjeta ? 'Limite de Credito Ofrecido' : 'Monto de Prestamo Ofrecido'}</div>
+                <div className="eval-key">{labelMonto}</div>
               </div>
               <div className="eval-item">
                 <div className="eval-val">{fmtPct(ev.tasa_interes)}</div>
@@ -1125,11 +1156,11 @@
               </div>
               <div className="eval-item">
                 <div className="eval-val">{ev.plazo_meses} meses</div>
-                <div className="eval-key">{esTarjeta ? 'Plazo de referencia' : 'Plazo del prestamo'}</div>
+                <div className="eval-key">{labelPlazo}</div>
               </div>
               <div className="eval-item">
                 <div className="eval-val">{fmt(ev.pago_mensual)}</div>
-                <div className="eval-key">{esTarjeta ? 'Pago minimo mensual (3%)' : 'Pago mensual estimado'}</div>
+                <div className="eval-key">{labelPago}</div>
               </div>
               <div className="eval-item">
                 <div className="eval-val">{ev.rfc_valido ? 'Valido' : 'No estandar'}</div>
@@ -1156,6 +1187,12 @@
       if (!resultado) return null;
       const data = resultado;
       const esTarjeta = data.tipo_producto === 'tarjeta_credito';
+      const esHipotecario = data.tipo_producto === 'hipotecario';
+
+      const tipoLabel = esHipotecario ? 'Credito Hipotecario' : esTarjeta ? 'Tarjeta de Credito' : 'Prestamo Personal';
+      const montoLabel = esTarjeta ? 'Limite aprobado' : 'Monto aprobado';
+      const pagoLabel = esTarjeta ? 'Pago minimo mensual' : 'Pago mensual';
+      const descripcion = esHipotecario ? 'credito hipotecario' : esTarjeta ? 'tarjeta de credito' : 'prestamo personal';
 
       return (
         <div className="card" style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -1166,7 +1203,7 @@
             <div className="result-hero">
               <span className="result-icon">&#x1F389;</span>
               <h2>Felicidades, {(data.nombre || '').split(' ')[0]}!</h2>
-              <p>Tu {esTarjeta ? 'tarjeta de credito' : 'prestamo personal'} ha sido autorizado exitosamente.</p>
+              <p>Tu {descripcion} ha sido autorizado exitosamente.</p>
             </div>
 
             <div className="result-folio">
@@ -1177,10 +1214,10 @@
             <ul className="detail-list">
               <li>
                 <span className="key">Tipo de producto</span>
-                <span className="val">{esTarjeta ? 'Tarjeta de Credito' : 'Prestamo Personal'}</span>
+                <span className="val">{esHipotecario ? '\uD83C\uDFE0 ' : esTarjeta ? '\uD83D\uDC8E ' : '\uD83D\uDCB3 '}{tipoLabel}</span>
               </li>
               <li>
-                <span className="key">{esTarjeta ? 'Limite aprobado' : 'Monto aprobado'}</span>
+                <span className="key">{montoLabel}</span>
                 <span className="val" style={{ color: 'var(--green)', fontSize: '1.1rem' }}>{fmt(data.monto_aprobado)}</span>
               </li>
               <li>
@@ -1192,7 +1229,7 @@
                 <span className="val">{data.plazo_meses} meses</span>
               </li>
               <li>
-                <span className="key">{esTarjeta ? 'Pago minimo mensual' : 'Pago mensual'}</span>
+                <span className="key">{pagoLabel}</span>
                 <span className="val">{fmt(data.pago_mensual)}</span>
               </li>
               <li>
@@ -1239,6 +1276,7 @@
         ocupacion: '',
         ingreso_mensual: '',
         ingreso_anual: '',
+        monto_infonavit: '',
       });
 
       // Apply theme to document
@@ -1305,6 +1343,7 @@
             rfc: formData.rfc.trim().toUpperCase(),
             tipo_producto: formData.tipo_producto,
             ingreso_mensual: parseFloat(formData.ingreso_mensual),
+            monto_infonavit: Number(formData.monto_infonavit) || 0,
           };
 
           const res = await fetch('/api/evaluar', {
@@ -1347,6 +1386,7 @@
             ocupacion: formData.ocupacion,
             ingreso_mensual: parseFloat(formData.ingreso_mensual),
             ingreso_anual: parseFloat(formData.ingreso_anual) || parseFloat(formData.ingreso_mensual) * 12,
+            monto_infonavit: Number(formData.monto_infonavit) || 0,
             score_credito: evaluacion.score,
             monto_ofrecido: evaluacion.monto_ofrecido,
             tasa_interes: evaluacion.tasa_interes,

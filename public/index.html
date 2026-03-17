@@ -93,15 +93,29 @@
         <div class="form-group">
           <label>Tipo de producto *</label>
           <div class="product-grid">
-            <div class="product-card" id="prod-prestamo" onclick="selectProduct('prestamo_personal')">
+            <div class="product-card" id="prod-prestamo"
+                 role="button" tabindex="0" aria-pressed="false"
+                 onclick="selectProduct('prestamo_personal')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectProduct('prestamo_personal')}">
               <span class="product-icon">💳</span>
               <h3>Préstamo Personal</h3>
               <p>Recibe efectivo directo a tu cuenta</p>
             </div>
-            <div class="product-card" id="prod-tarjeta" onclick="selectProduct('tarjeta_credito')">
+            <div class="product-card" id="prod-tarjeta"
+                 role="button" tabindex="0" aria-pressed="false"
+                 onclick="selectProduct('tarjeta_credito')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectProduct('tarjeta_credito')}">
               <span class="product-icon">💎</span>
               <h3>Tarjeta de Crédito</h3>
               <p>Línea de crédito revolvente</p>
+            </div>
+            <div class="product-card" id="prod-hipotecario"
+                 role="button" tabindex="0" aria-pressed="false"
+                 onclick="selectProduct('hipotecario')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectProduct('hipotecario')}">
+              <span class="product-icon">🏠</span>
+              <h3>Crédito Hipotecario</h3>
+              <p>Financia tu hogar a largo plazo</p>
             </div>
           </div>
           <span class="field-error" id="err-producto">Selecciona un producto</span>
@@ -155,6 +169,12 @@
           <label for="ingreso_anual">Ingreso anual neto (MXN)</label>
           <input type="number" id="ingreso_anual" placeholder="Se calcula automáticamente" min="0" step="1000" />
           <span class="field-hint">Puedes modificarlo si tus ingresos son variables</span>
+        </div>
+
+        <div class="form-group full" id="grupo-infonavit" style="display:none">
+          <label for="monto-infonavit">Monto Infonavit (MXN)</label>
+          <input type="number" id="monto-infonavit" placeholder="0" min="0" step="1000" />
+          <span class="field-hint">Subsidio del fondo de vivienda (opcional)</span>
         </div>
 
       </div>

@@ -60,7 +60,7 @@ module.exports = {
     const aprobados = solicitudes.filter(s => s.estado === 'aprobado');
     const monto_total = aprobados.reduce((sum, s) => sum + s.monto_ofrecido, 0);
 
-    const por_tipo = ['prestamo_personal', 'tarjeta_credito'].map(tipo => ({
+    const por_tipo = ['prestamo_personal', 'tarjeta_credito', 'hipotecario'].map(tipo => ({
       tipo_producto: tipo,
       cantidad: solicitudes.filter(s => s.tipo_producto === tipo).length
     }));

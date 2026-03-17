@@ -33,8 +33,8 @@ function generarScore(ingreso, rfc_valido) {
   return Math.max(400, Math.min(850, score));
 }
 
-function calcularOferta(score, ingreso_mensual, tipo_producto) {
-  let multiplicador, tasa_base, plazo;
+function calcularOferta(score, ingreso_mensual, tipo_producto, datos = {}) {
+  let multiplicador, tasa_base, plazo, monto, pago_mensual;
 
   if (tipo_producto === 'prestamo_personal') {
     plazo = 60;
@@ -43,6 +43,21 @@ function calcularOferta(score, ingreso_mensual, tipo_producto) {
     else if (score >= 600) { multiplicador = 4;   tasa_base = 0.32; }
     else if (score >= 500) { multiplicador = 2.5; tasa_base = 0.42; }
     else                   { multiplicador = 1.5; tasa_base = 0.55; }
+    monto = Math.round(ingreso_mensual * multiplicador * 100) / 100;
+    const r = tasa_base / 12;
+    pago_mensual = Math.round((monto * r) / (1 - Math.pow(1 + r, -plazo)) * 100) / 100;
+  } else if (tipo_producto === 'hipotecario') {
+    plazo = 240;
+    if      (score >= 750) { multiplicador = 40; tasa_base = 0.09; }
+    else if (score >= 680) { multiplicador = 30; tasa_base = 0.10; }
+    else if (score >= 600) { multiplicador = 22; tasa_base = 0.12; }
+    else if (score >= 500) { multiplicador = 15; tasa_base = 0.14; }
+    else                   { multiplicador = 10; tasa_base = 0.16; }
+    const montoBase = Math.round(ingreso_mensual * multiplicador);
+    const montoInfonavit = Number(datos.monto_infonavit) || 0;
+    monto = montoBase + montoInfonavit;
+    const r = tasa_base / 12;
+    pago_mensual = Math.round(monto * r / (1 - Math.pow(1 + r, -plazo)));
   } else {
     plazo = 12;
     if      (score >= 750) { multiplicador = 4;   tasa_base = 0.28; }
@@ -50,17 +65,7 @@ function calcularOferta(score, ingreso_mensual, tipo_producto) {
     else if (score >= 600) { multiplicador = 2;   tasa_base = 0.45; }
     else if (score >= 500) { multiplicador = 1.2; tasa_base = 0.55; }
     else                   { multiplicador = 0.8; tasa_base = 0.65; }
-  }
-
-  const monto = Math.round(ingreso_mensual * multiplicador * 100) / 100;
-  const tasa_mensual = tasa_base / 12;
-
-  let pago_mensual;
-  if (tipo_producto === 'prestamo_personal') {
-    pago_mensual = Math.round(
-      (monto * tasa_mensual) / (1 - Math.pow(1 + tasa_mensual, -plazo)) * 100
-    ) / 100;
-  } else {
+    monto = Math.round(ingreso_mensual * multiplicador * 100) / 100;
     pago_mensual = Math.round(monto * 0.03 * 100) / 100; // 3% pago mínimo
   }
 
@@ -96,7 +101,7 @@ app.post('/api/evaluar', (req, res) => {
 
     const rfc_valido  = validarRFC(rfc);
     const score       = generarScore(parseFloat(ingreso_mensual), rfc_valido);
-    const oferta      = calcularOferta(score, parseFloat(ingreso_mensual), tipo_producto);
+    const oferta      = calcularOferta(score, parseFloat(ingreso_mensual), tipo_producto, { monto_infonavit: req.body.monto_infonavit || 0 });
 
     res.json({
       score,
@@ -118,7 +123,8 @@ app.post('/api/solicitud', (req, res) => {
     const {
       nombre, telefono, direccion, rfc, tipo_producto,
       ingreso_mensual, ingreso_anual, ocupacion,
-      score_credito, monto_ofrecido, tasa_interes, plazo_meses, pago_mensual
+      score_credito, monto_ofrecido, tasa_interes, plazo_meses, pago_mensual,
+      monto_infonavit
     } = req.body;
 
     const solicitudId = uuidv4();
@@ -141,6 +147,7 @@ app.post('/api/solicitud', (req, res) => {
       tasa_interes:     parseFloat(tasa_interes),
       plazo_meses:      parseInt(plazo_meses),
       pago_mensual:     parseFloat(pago_mensual),
+      monto_infonavit:  Number(monto_infonavit) || 0,
       estado:           'aprobado',
       fecha_solicitud:  ahora,
       fecha_aprobacion: ahora,

@@ -65,6 +65,7 @@ function selectProduct(tipo) {
   state.productoSeleccionado = tipo;
   document.getElementById('prod-prestamo').classList.toggle('selected', tipo === 'prestamo_personal');
   document.getElementById('prod-tarjeta').classList.toggle('selected', tipo === 'tarjeta_credito');
+  document.getElementById('prod-hipotecario').classList.toggle('selected', tipo === 'hipotecario');
   limpiarError('producto');
 }
 
@@ -123,7 +124,18 @@ function validarPaso2() {
 function irPaso1() { setStep(1); }
 
 function irPaso2() {
-  if (validarPaso1()) setStep(2);
+  if (validarPaso1()) {
+    const grupoInfonavit = document.getElementById('grupo-infonavit');
+    const esHipotecario = state.productoSeleccionado === 'hipotecario';
+    if (grupoInfonavit) {
+      grupoInfonavit.style.display = esHipotecario ? '' : 'none';
+    }
+    if (!esHipotecario) {
+      const infonavitInput = document.getElementById('monto-infonavit');
+      if (infonavitInput) infonavitInput.value = '';
+    }
+    setStep(2);
+  }
 }
 
 async function irPaso3() {
@@ -165,7 +177,8 @@ function recopilarDatos() {
     ocupacion: document.getElementById('ocupacion').value,
     ingreso_mensual: parseFloat(document.getElementById('ingreso_mensual').value),
     ingreso_anual: parseFloat(document.getElementById('ingreso_anual').value) ||
-                   parseFloat(document.getElementById('ingreso_mensual').value) * 12
+                   parseFloat(document.getElementById('ingreso_mensual').value) * 12,
+    monto_infonavit: Number(document.getElementById('monto-infonavit')?.value) || 0
   };
 }
 
@@ -175,6 +188,22 @@ function recopilarDatos() {
 function renderEvaluacion(ev, tipo) {
   const scoreColor = ev.score >= 750 ? '#0ee8a0' : ev.score >= 680 ? '#4d9eff' : ev.score >= 600 ? '#e8b84b' : '#ff3d5a';
   const esTarjeta = tipo === 'tarjeta_credito';
+  const esHipotecario = tipo === 'hipotecario';
+
+  let labelMonto, labelPlazo, labelPago;
+  if (esHipotecario) {
+    labelMonto = 'Monto Hipotecario Ofrecido';
+    labelPlazo = 'Plazo del crédito';
+    labelPago = 'Pago mensual estimado';
+  } else if (esTarjeta) {
+    labelMonto = 'Límite de Crédito Ofrecido';
+    labelPlazo = 'Plazo de referencia';
+    labelPago = 'Pago mínimo mensual (3%)';
+  } else {
+    labelMonto = 'Monto de Préstamo Ofrecido';
+    labelPlazo = 'Plazo del préstamo';
+    labelPago = 'Pago mensual estimado';
+  }
 
   const html = `
     <div class="score-display">
@@ -186,7 +215,7 @@ function renderEvaluacion(ev, tipo) {
     <div class="eval-grid">
       <div class="eval-item highlight">
         <div class="eval-val">${fmt(ev.monto_ofrecido)}</div>
-        <div class="eval-key">${esTarjeta ? 'Límite de Crédito Ofrecido' : 'Monto de Préstamo Ofrecido'}</div>
+        <div class="eval-key">${labelMonto}</div>
       </div>
 
       <div class="eval-item">
@@ -196,12 +225,12 @@ function renderEvaluacion(ev, tipo) {
 
       <div class="eval-item">
         <div class="eval-val">${ev.plazo_meses} meses</div>
-        <div class="eval-key">${esTarjeta ? 'Plazo de referencia' : 'Plazo del préstamo'}</div>
+        <div class="eval-key">${labelPlazo}</div>
       </div>
 
       <div class="eval-item">
         <div class="eval-val">${fmt(ev.pago_mensual)}</div>
-        <div class="eval-key">${esTarjeta ? 'Pago mínimo mensual (3%)' : 'Pago mensual estimado'}</div>
+        <div class="eval-key">${labelPago}</div>
       </div>
 
       <div class="eval-item">
@@ -261,12 +290,31 @@ async function aceptarCredito() {
 // ────────────────────────────────────────────────
 function renderResultado(data) {
   const esTarjeta = data.tipo_producto === 'tarjeta_credito';
+  const esHipotecario = data.tipo_producto === 'hipotecario';
+
+  let tipoLabel, montoLabel, pagoLabel, descripcion;
+  if (esHipotecario) {
+    tipoLabel = '🏠 Crédito Hipotecario';
+    montoLabel = 'Monto aprobado';
+    pagoLabel = 'Pago mensual';
+    descripcion = 'crédito hipotecario';
+  } else if (esTarjeta) {
+    tipoLabel = '💎 Tarjeta de Crédito';
+    montoLabel = 'Límite aprobado';
+    pagoLabel = 'Pago mínimo mensual';
+    descripcion = 'tarjeta de crédito';
+  } else {
+    tipoLabel = '💳 Préstamo Personal';
+    montoLabel = 'Monto aprobado';
+    pagoLabel = 'Pago mensual';
+    descripcion = 'préstamo personal';
+  }
 
   const html = `
     <div class="result-hero">
       <span class="result-icon">🎉</span>
       <h2>¡Felicidades, ${data.nombre.split(' ')[0]}!</h2>
-      <p>Tu ${esTarjeta ? 'tarjeta de crédito' : 'préstamo personal'} ha sido autorizado exitosamente.</p>
+      <p>Tu ${descripcion} ha sido autorizado exitosamente.</p>
     </div>
 
     <div class="result-folio">
@@ -275,11 +323,11 @@ function renderResultado(data) {
     </div>
 
     <ul class="detail-list">
-      <li><span class="key">Tipo de producto</span><span class="val">${esTarjeta ? '💎 Tarjeta de Crédito' : '💳 Préstamo Personal'}</span></li>
-      <li><span class="key">${esTarjeta ? 'Límite aprobado' : 'Monto aprobado'}</span><span class="val" style="color:var(--success);font-size:1.1rem">${fmt(data.monto_aprobado)}</span></li>
+      <li><span class="key">Tipo de producto</span><span class="val">${tipoLabel}</span></li>
+      <li><span class="key">${montoLabel}</span><span class="val" style="color:var(--success);font-size:1.1rem">${fmt(data.monto_aprobado)}</span></li>
       <li><span class="key">Tasa de interés anual</span><span class="val">${fmtPct(data.tasa_interes)}</span></li>
       <li><span class="key">Plazo</span><span class="val">${data.plazo_meses} meses</span></li>
-      <li><span class="key">${esTarjeta ? 'Pago mínimo mensual' : 'Pago mensual'}</span><span class="val">${fmt(data.pago_mensual)}</span></li>
+      <li><span class="key">${pagoLabel}</span><span class="val">${fmt(data.pago_mensual)}</span></li>
       <li><span class="key">Fecha de inicio</span><span class="val">${fmtFecha(data.fecha_aprobacion)}</span></li>
       <li><span class="key">Fecha de vencimiento</span><span class="val">${fmtFecha(data.fecha_vencimiento)}</span></li>
       <li><span class="key">Folio del crédito</span><span class="val">${data.folio_credito}</span></li>

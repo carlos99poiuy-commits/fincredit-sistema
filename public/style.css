@@ -385,7 +385,7 @@ input::placeholder { color: var(--text-muted); }
 /* ── Product selector ──────────────────────────── */
 .product-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 14px;
   margin-top: 4px;
 }
@@ -750,4 +750,11 @@ input::placeholder { color: var(--text-muted); }
   .topbar { padding: 0 16px; }
   .container { margin: 16px auto; }
   .result-folio, .detail-list { margin-left: 18px; margin-right: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

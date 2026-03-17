@@ -99,9 +99,19 @@ app.post('/api/evaluar', (req, res) => {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
     }
 
+    const PRODUCTOS_VALIDOS = ['prestamo_personal', 'tarjeta_credito', 'hipotecario'];
+    if (!PRODUCTOS_VALIDOS.includes(tipo_producto)) {
+      return res.status(400).json({ error: 'Tipo de producto inválido' });
+    }
+
+    const monto_infonavit_val = Number(req.body.monto_infonavit) || 0;
+    if (!isFinite(monto_infonavit_val) || monto_infonavit_val < 0 || monto_infonavit_val > 2000000) {
+      return res.status(400).json({ error: 'Monto Infonavit debe ser entre 0 y 2,000,000' });
+    }
+
     const rfc_valido  = validarRFC(rfc);
     const score       = generarScore(parseFloat(ingreso_mensual), rfc_valido);
-    const oferta      = calcularOferta(score, parseFloat(ingreso_mensual), tipo_producto, { monto_infonavit: req.body.monto_infonavit || 0 });
+    const oferta      = calcularOferta(score, parseFloat(ingreso_mensual), tipo_producto, { monto_infonavit: monto_infonavit_val });
 
     res.json({
       score,
@@ -127,6 +137,16 @@ app.post('/api/solicitud', (req, res) => {
       monto_infonavit
     } = req.body;
 
+    const PRODUCTOS_VALIDOS = ['prestamo_personal', 'tarjeta_credito', 'hipotecario'];
+    if (!tipo_producto || !PRODUCTOS_VALIDOS.includes(tipo_producto)) {
+      return res.status(400).json({ error: 'Tipo de producto inválido' });
+    }
+
+    const monto_infonavit_val = Number(monto_infonavit) || 0;
+    if (!isFinite(monto_infonavit_val) || monto_infonavit_val < 0 || monto_infonavit_val > 2000000) {
+      return res.status(400).json({ error: 'Monto Infonavit debe ser entre 0 y 2,000,000' });
+    }
+
     const solicitudId = uuidv4();
     const creditoId   = uuidv4();
     const folio        = generarFolio();
@@ -147,7 +167,7 @@ app.post('/api/solicitud', (req, res) => {
       tasa_interes:     parseFloat(tasa_interes),
       plazo_meses:      parseInt(plazo_meses),
       pago_mensual:     parseFloat(pago_mensual),
-      monto_infonavit:  Number(monto_infonavit) || 0,
+      monto_infonavit:  monto_infonavit_val,
       estado:           'aprobado',
       fecha_solicitud:  ahora,
       fecha_aprobacion: ahora,

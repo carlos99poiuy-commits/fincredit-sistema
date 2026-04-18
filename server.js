@@ -209,8 +209,8 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.get('/json-forge', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'json-forge.html'));
+app.get('/inteligencia-artificial-now', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'inteligencia-artificial-now.html'));
 });
 
 app.listen(PORT, () => {

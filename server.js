@@ -209,7 +209,12 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/json-forge', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'json-forge.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`\n✅ Sistema de Crédito en http://localhost:${PORT}`);
-  console.log(`📊 Panel Admin en    http://localhost:${PORT}/admin\n`);
+  console.log(`📊 Panel Admin en    http://localhost:${PORT}/admin`);
+  console.log(`🔧 JSON Forge en     http://localhost:${PORT}/json-forge\n`);
 });

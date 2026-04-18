@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Forge — Dynamic Schema Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #070b12;
+      --surface:     #0c1220;
+      --surface-up:  #111926;
+      --border:      #192033;
+      --border-lit:  #253350;
+      --amber:       #e8b84b;
+      --amber-dim:   rgba(232,184,75,0.10);
+      --amber-glow:  rgba(232,184,75,0.25);
+      --green:       #0ee8a0;
+      --green-dim:   rgba(14,232,160,0.10);
+      --red:         #ff3d5a;
+      --red-dim:     rgba(255,61,90,0.10);
+      --blue:        #4d9eff;
+      --blue-dim:    rgba(77,158,255,0.10);
+      --purple:      #b87fff;
+      --purple-dim:  rgba(184,127,255,0.10);
+      --text:        #b8c8e0;
+      --text-muted:  #3d5070;
+      --text-bright: #e0ecff;
+      --font-d:      'Syne', sans-serif;
+      --font-m:      'JetBrains Mono', monospace;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font-m);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    * { position: relative; z-index: 1; }
+
+    /* ── Topbar ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,11,18,0.95);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 24px; }
+
+    .logo-mark {
+      font-family: var(--font-d); font-size: 1.05rem; font-weight: 800;
+      color: var(--text-bright); letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .logo-mark .bracket { color: var(--amber); font-family: var(--font-m); font-weight: 700; }
+
+    .badge {
+      font-size: 0.62rem; padding: 3px 8px;
+      background: var(--amber-dim); color: var(--amber);
+      border: 1px solid rgba(232,184,75,0.3); border-radius: 3px;
+      letter-spacing: 1px;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 0.72rem; color: var(--text-muted); }
+
+    #clock { color: var(--amber); font-weight: 500; letter-spacing: 1px; }
+
+    /* ── Layout ── */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 28px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* ── Page head ── */
+    .page-head {
+      grid-column: 1 / -1;
+      margin-bottom: 4px;
+      animation: fade-up 0.5s ease both;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-title {
+      font-family: var(--font-d); font-size: 2rem; font-weight: 800;
+      color: var(--text-bright); letter-spacing: -1px; line-height: 1;
+    }
+    .page-title span { color: var(--amber); }
+    .page-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; letter-spacing: 0.5px; }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      animation: fade-up 0.5s 0.1s ease both;
+    }
+
+    .panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      background: rgba(7,11,18,0.5);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-label {
+      font-size: 0.68rem; color: var(--amber);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+
+    .panel-body { padding: 20px; }
+
+    /* ── Schema name ── */
+    .schema-name-row {
+      display: flex; gap: 10px; align-items: center; margin-bottom: 20px;
+    }
+
+    .schema-name-row input {
+      flex: 1; padding: 9px 14px;
+      background: var(--bg); border: 1px solid var(--border-lit);
+      border-radius: 4px; color: var(--text-bright);
+      font-family: var(--font-m); font-size: 0.88rem;
+      outline: none; transition: border-color 0.15s;
+    }
+    .schema-name-row input:focus { border-color: var(--amber); }
+
+    .schema-type-sel {
+      padding: 9px 12px;
+      background: var(--bg); border: 1px solid var(--border-lit);
+      border-radius: 4px; color: var(--text-bright);
+      font-family: var(--font-m); font-size: 0.82rem;
+      outline: none; cursor: pointer; transition: border-color 0.15s;
+    }
+    .schema-type-sel:focus { border-color: var(--amber); }
+    .schema-type-sel option { background: var(--surface); }
+
+    /* ── Fields list ── */
+    .fields-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 110px 90px 36px;
+      gap: 8px; align-items: center;
+      padding: 10px 14px;
+      background: var(--surface-up);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: border-color 0.15s;
+      animation: scan-in 0.2s ease both;
+    }
+
+    @keyframes scan-in {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .field-row:hover { border-color: var(--border-lit); }
+
+    .field-row input, .field-row select {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text-bright);
+      font-family: var(--font-m); font-size: 0.8rem;
+      padding: 6px 10px; outline: none; width: 100%;
+      transition: border-color 0.15s;
+    }
+    .field-row input:focus, .field-row select:focus { border-color: var(--amber); }
+    .field-row select option { background: var(--surface); }
+    .field-row input::placeholder { color: var(--text-muted); }
+
+    .required-toggle {
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px; font-size: 0.62rem; color: var(--text-muted);
+      cursor: pointer; user-select: none; letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .required-toggle input[type=checkbox] { accent-color: var(--amber); width: 13px; height: 13px; cursor: pointer; }
+
+    .btn-del {
+      width: 32px; height: 32px; border-radius: 4px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-del:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 9px 18px; border-radius: 4px;
+      font-size: 0.75rem; font-family: var(--font-m);
+      font-weight: 700; letter-spacing: 0.5px;
+      cursor: pointer; border: 1px solid transparent;
+      transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px;
+    }
+
+    .btn-primary { background: var(--amber); border-color: var(--amber); color: #070b12; }
+    .btn-primary:hover { background: #d4a43e; box-shadow: 0 0 14px var(--amber-glow); }
+
+    .btn-ghost { background: transparent; border-color: var(--border-lit); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--surface-up); color: var(--text); border-color: var(--text-muted); }
+
+    .btn-green { background: var(--green); border-color: var(--green); color: #070b12; }
+    .btn-green:hover { background: #0cd492; box-shadow: 0 0 14px rgba(14,232,160,0.25); }
+
+    .btn-blue { background: var(--blue); border-color: var(--blue); color: #070b12; }
+    .btn-blue:hover { background: #3d8fe6; box-shadow: 0 0 14px rgba(77,158,255,0.25); }
+
+    /* ── Output panel ── */
+    .output-wrap {
+      position: relative;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      min-height: 320px;
+      overflow: auto;
+    }
+
+    .output-wrap pre {
+      padding: 18px 20px;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Syntax highlight */
+    .j-key    { color: var(--blue); }
+    .j-str    { color: var(--green); }
+    .j-num    { color: var(--amber); }
+    .j-bool   { color: var(--purple); }
+    .j-null   { color: var(--text-muted); }
+    .j-punc   { color: var(--text-muted); }
+
+    .copy-btn {
+      position: absolute; top: 10px; right: 10px;
+      padding: 5px 12px; font-size: 0.68rem;
+      background: var(--surface); border: 1px solid var(--border-lit);
+      color: var(--text-muted); border-radius: 4px;
+      font-family: var(--font-m); cursor: pointer; letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { color: var(--amber); border-color: var(--amber); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    /* ── Format tabs ── */
+    .fmt-tabs {
+      display: flex; gap: 1px;
+      background: var(--border);
+      border-radius: 4px; overflow: hidden;
+      font-size: 0.68rem;
+    }
+
+    .fmt-tab {
+      padding: 5px 12px; cursor: pointer;
+      background: var(--surface); color: var(--text-muted);
+      border: none; font-family: var(--font-m);
+      font-size: 0.68rem; letter-spacing: 0.5px;
+      transition: all 0.1s;
+    }
+    .fmt-tab:hover { color: var(--text); background: var(--surface-up); }
+    .fmt-tab.active { background: var(--amber-dim); color: var(--amber); }
+
+    /* ── Presets ── */
+    .presets-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+    .preset-chip {
+      padding: 4px 12px; border-radius: 20px; font-size: 0.68rem;
+      background: var(--surface-up); border: 1px solid var(--border-lit);
+      color: var(--text-muted); cursor: pointer; letter-spacing: 0.5px;
+      font-family: var(--font-m); transition: all 0.15s;
+    }
+    .preset-chip:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      padding: 10px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.5px;
+    }
+    .stats-bar span b { color: var(--amber); }
+
+    /* ── Empty state ── */
+    .empty-fields {
+      text-align: center; padding: 32px 20px;
+      color: var(--text-muted); font-size: 0.75rem; letter-spacing: 1px;
+    }
+    .empty-fields .ic { font-size: 2rem; display: block; margin-bottom: 10px; opacity: 0.3; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .main { grid-template-columns: 1fr; padding: 16px; }
+      .page-head { grid-column: 1; }
+      .field-row { grid-template-columns: 1fr 100px 36px; }
+      .field-row .required-toggle { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">
+      <span class="bracket">[</span>FC<span class="bracket">]</span>
+      FinCredit
+    </div>
+    <span class="badge">JSON FORGE</span>
+  </div>
+  <div class="topbar-right">
+    <span id="clock">—</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Head -->
+  <div class="page-head">
+    <h1 class="page-title">JSON <span>FORGE</span></h1>
+    <p class="page-sub">// CONSTRUCTOR DE ESQUEMAS JSON CON VARIABLES DINÁMICAS</p>
+  </div>
+
+  <!-- ── Panel izquierdo: Builder ── -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-label">// DEFINICIÓN DE CAMPOS</span>
+      <div class="fmt-tabs">
+        <button class="fmt-tab active" onclick="setMode('schema')" id="tab-schema">SCHEMA</button>
+        <button class="fmt-tab" onclick="setMode('sample')" id="tab-sample">MUESTRA</button>
+        <button class="fmt-tab" onclick="setMode('ts')" id="tab-ts">TYPESCRIPT</button>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <!-- Nombre del esquema -->
+      <div class="schema-name-row">
+        <input type="text" id="schema-name" placeholder="Nombre del esquema (ej. Usuario)" value="MiEsquema" oninput="render()" />
+        <select class="schema-type-sel" id="root-type" onchange="render()">
+          <option value="object">object</option>
+          <option value="array">array</option>
+        </select>
+      </div>
+
+      <!-- Presets -->
+      <div class="presets-row">
+        <span class="preset-chip" onclick="loadPreset('usuario')">👤 Usuario</span>
+        <span class="preset-chip" onclick="loadPreset('producto')">📦 Producto</span>
+        <span class="preset-chip" onclick="loadPreset('credito')">💳 Crédito</span>
+        <span class="preset-chip" onclick="loadPreset('api')">⚡ API Response</span>
+        <span class="preset-chip" onclick="clearFields()">✕ Limpiar</span>
+      </div>
+
+      <!-- Lista de campos -->
+      <div class="fields-list" id="fields-list">
+        <div class="empty-fields" id="empty-msg">
+          <span class="ic">{ }</span>
+          AGREGA CAMPOS PARA COMENZAR
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addField()">+ CAMPO</button>
+        <button class="btn btn-ghost" onclick="addField('required')">+ REQUERIDO</button>
+        <button class="btn btn-ghost" onclick="addField('array')">+ ARRAY</button>
+        <button class="btn btn-ghost" onclick="addField('object')">+ OBJETO</button>
+      </div>
+
+    </div>
+    <!-- Stats -->
+    <div class="stats-bar" id="stats-bar">
+      <span>CAMPOS <b id="st-total">0</b></span>
+      <span>REQUERIDOS <b id="st-req">0</b></span>
+      <span>OPCIONALES <b id="st-opt">0</b></span>
+    </div>
+  </div>
+
+  <!-- ── Panel derecho: Output ── -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-label">// SALIDA GENERADA</span>
+      <button class="btn btn-green" onclick="downloadJSON()">↓ DESCARGAR</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="output-wrap">
+        <button class="copy-btn" id="copy-btn" onclick="copyOutput()">COPIAR</button>
+        <pre id="output-pre">// Agrega campos para ver la salida</pre>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ── Estado ────────────────────────────────────────
+let fields = [];
+let mode = 'schema'; // schema | sample | ts
+let idCounter = 0;
+
+const TYPES = ['string','number','boolean','object','array','null','integer','any'];
+
+// ── Presets ───────────────────────────────────────
+const PRESETS = {
+  usuario: [
+    { name: 'id',        type: 'integer', required: true  },
+    { name: 'nombre',    type: 'string',  required: true  },
+    { name: 'email',     type: 'string',  required: true  },
+    { name: 'telefono',  type: 'string',  required: false },
+    { name: 'edad',      type: 'integer', required: false },
+    { name: 'activo',    type: 'boolean', required: true  },
+  ],
+  producto: [
+    { name: 'id',          type: 'integer', required: true  },
+    { name: 'nombre',      type: 'string',  required: true  },
+    { name: 'precio',      type: 'number',  required: true  },
+    { name: 'stock',       type: 'integer', required: true  },
+    { name: 'categoria',   type: 'string',  required: false },
+    { name: 'tags',        type: 'array',   required: false },
+    { name: 'metadata',    type: 'object',  required: false },
+  ],
+  credito: [
+    { name: 'folio',           type: 'string',  required: true  },
+    { name: 'nombre',          type: 'string',  required: true  },
+    { name: 'rfc',             type: 'string',  required: true  },
+    { name: 'score_credito',   type: 'integer', required: true  },
+    { name: 'monto_ofrecido',  type: 'number',  required: true  },
+    { name: 'tasa_interes',    type: 'number',  required: true  },
+    { name: 'plazo_meses',     type: 'integer', required: true  },
+    { name: 'estado',          type: 'string',  required: true  },
+    { name: 'fecha_solicitud', type: 'string',  required: false },
+  ],
+  api: [
+    { name: 'success',   type: 'boolean', required: true  },
+    { name: 'status',    type: 'integer', required: true  },
+    { name: 'message',   type: 'string',  required: false },
+    { name: 'data',      type: 'object',  required: true  },
+    { name: 'errors',    type: 'array',   required: false },
+    { name: 'timestamp', type: 'string',  required: true  },
+  ],
+};
+
+function loadPreset(name) {
+  fields = PRESETS[name].map(f => ({ ...f, id: ++idCounter }));
+  renderFields();
+  render();
+}
+
+function clearFields() {
+  fields = [];
+  renderFields();
+  render();
+}
+
+// ── Agregar / eliminar campos ─────────────────────
+function addField(hint = '') {
+  const type = hint === 'array' ? 'array' : hint === 'object' ? 'object' : 'string';
+  fields.push({ id: ++idCounter, name: '', type, required: hint === 'required' });
+  renderFields();
+  render();
+  // Focus al último input
+  const inputs = document.querySelectorAll('.field-row input[type=text]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removeField(id) {
+  fields = fields.filter(f => f.id !== id);
+  renderFields();
+  render();
+}
+
+function updateField(id, key, value) {
+  const f = fields.find(f => f.id === id);
+  if (f) f[key] = value;
+  render();
+}
+
+// ── Render lista de campos ────────────────────────
+function renderFields() {
+  const list = document.getElementById('fields-list');
+  const empty = document.getElementById('empty-msg');
+
+  if (fields.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = fields.map(f => `
+    <div class="field-row" id="row-${f.id}">
+      <input type="text" placeholder="nombre_campo" value="${esc(f.name)}"
+             oninput="updateField(${f.id},'name',this.value)" />
+      <select onchange="updateField(${f.id},'type',this.value)">
+        ${TYPES.map(t => `<option value="${t}"${f.type===t?' selected':''}>${t}</option>`).join('')}
+      </select>
+      <label class="required-toggle">
+        <input type="checkbox" ${f.required?'checked':''} onchange="updateField(${f.id},'required',this.checked)" />
+        REQ
+      </label>
+      <button class="btn-del" onclick="removeField(${f.id})" title="Eliminar">×</button>
+    </div>
+  `).join('');
+
+  // Stats
+  const total = fields.length;
+  const req   = fields.filter(f => f.required).length;
+  document.getElementById('st-total').textContent = total;
+  document.getElementById('st-req').textContent   = req;
+  document.getElementById('st-opt').textContent   = total - req;
+}
+
+// ── Modo de salida ────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.fmt-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + m).classList.add('active');
+  render();
+}
+
+// ── Generar salida ────────────────────────────────
+function render() {
+  const schemaName = document.getElementById('schema-name').value || 'Esquema';
+  const rootType   = document.getElementById('root-type').value;
+  let output = '';
+
+  if (mode === 'schema')  output = buildSchema(schemaName, rootType);
+  if (mode === 'sample')  output = buildSample(schemaName, rootType);
+  if (mode === 'ts')      output = buildTS(schemaName);
+
+  document.getElementById('output-pre').innerHTML = highlight(output);
+}
+
+// ── JSON Schema ───────────────────────────────────
+function buildSchema(name, rootType) {
+  const validFields = fields.filter(f => f.name.trim());
+  const properties = {};
+  validFields.forEach(f => {
+    const entry = { type: f.type };
+    if (f.type === 'array')  entry.items = { type: 'string' };
+    if (f.type === 'object') entry.properties = {};
+    if (f.type === 'any')    delete entry.type;
+    properties[f.name.trim()] = entry;
+  });
+  const required = validFields.filter(f => f.required).map(f => f.name.trim());
+
+  const schema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: name,
+    type: rootType,
+  };
+
+  if (rootType === 'array') {
+    schema.items = { type: 'object', properties, ...(required.length ? { required } : {}) };
+  } else {
+    schema.properties = properties;
+    if (required.length) schema.required = required;
+    schema.additionalProperties = false;
+  }
+
+  return JSON.stringify(schema, null, 2);
+}
+
+// ── Muestra de datos ──────────────────────────────
+function buildSample(name, rootType) {
+  const validFields = fields.filter(f => f.name.trim());
+  const sample = {};
+  validFields.forEach(f => {
+    sample[f.name.trim()] = sampleValue(f.type, f.name);
+  });
+  const obj = rootType === 'array' ? [sample, { ...sample }] : sample;
+  return JSON.stringify(obj, null, 2);
+}
+
+function sampleValue(type, name) {
+  const n = name.toLowerCase();
+  if (type === 'string') {
+    if (n.includes('email'))   return 'usuario@ejemplo.com';
+    if (n.includes('fecha') || n.includes('date')) return new Date().toISOString().split('T')[0];
+    if (n.includes('nombre') || n.includes('name')) return 'Juan Pérez';
+    if (n.includes('id'))      return 'abc-123';
+    if (n.includes('estado') || n.includes('status')) return 'activo';
+    if (n.includes('folio'))   return 'CRED-202504-12345';
+    if (n.includes('rfc'))     return 'PELJ800101ABC';
+    if (n.includes('tel'))     return '5512345678';
+    return `valor_${name}`;
+  }
+  if (type === 'integer') return n.includes('id') ? 1 : n.includes('edad') || n.includes('age') ? 28 : n.includes('plazo') ? 60 : n.includes('score') ? 720 : 42;
+  if (type === 'number')  return n.includes('tasa') ? 0.24 : n.includes('monto') || n.includes('precio') ? 15000.00 : 99.99;
+  if (type === 'boolean') return true;
+  if (type === 'array')   return ['item_1', 'item_2'];
+  if (type === 'object')  return { clave: 'valor' };
+  if (type === 'null')    return null;
+  return null;
+}
+
+// ── TypeScript interface ──────────────────────────
+function buildTS(name) {
+  const validFields = fields.filter(f => f.name.trim());
+  const tsType = t => ({ string:'string', number:'number', integer:'number', boolean:'boolean', object:'Record<string, unknown>', array:'unknown[]', null:'null', any:'unknown' })[t] || 'unknown';
+  const lines = validFields.map(f => `  ${f.name.trim()}${f.required ? '' : '?'}: ${tsType(f.type)};`);
+  return `interface ${toPascal(name)} {\n${lines.join('\n')}\n}`;
+}
+
+function toPascal(str) {
+  return str.replace(/(?:^|[\s_-])(\w)/g, (_, c) => c.toUpperCase()).replace(/\s+/g, '');
+}
+
+// ── Syntax highlight ──────────────────────────────
+function highlight(str) {
+  if (str.startsWith('interface')) {
+    return str
+      .replace(/\b(interface|extends)\b/g, '<span style="color:var(--purple)">$1</span>')
+      .replace(/([A-Z]\w+)(\s*\{)/g, '<span style="color:var(--amber)">$1</span>$2')
+      .replace(/(\w+\??)(:\s)/g, '<span class="j-key">$1</span>$2')
+      .replace(/\b(string|number|boolean|unknown|null|Record|Array)\b/g, '<span class="j-bool">$1</span>');
+  }
+  return str
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<span class="j-key">$1</span><span class="j-punc">$2</span>')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="j-str">$1</span>')
+    .replace(/:\s*(\d+\.?\d*)/g, ': <span class="j-num">$1</span>')
+    .replace(/:\s*(true|false)/g, ': <span class="j-bool">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="j-null">$1</span>');
+}
+
+// ── Copiar ────────────────────────────────────────
+function copyOutput() {
+  const text = document.getElementById('output-pre').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ COPIADO';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPIAR'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── Descargar ─────────────────────────────────────
+function downloadJSON() {
+  const name = document.getElementById('schema-name').value || 'schema';
+  const ext  = mode === 'ts' ? 'ts' : 'json';
+  const text = document.getElementById('output-pre').textContent;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${name.toLowerCase().replace(/\s+/g,'_')}.${ext}`;
+  a.click();
+}
+
+// ── Utils ─────────────────────────────────────────
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Reloj ─────────────────────────────────────────
+(function tick() {
+  const now = new Date();
+  const t = [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map(n => String(n).padStart(2,'0')).join(':');
+  document.getElementById('clock').textContent = t;
+  setTimeout(tick, 1000);
+})();
+
+// ── Init con preset ───────────────────────────────
+loadPreset('credito');
+</script>
+</body>
+</html>
